@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Home</title>
+    <title>Create Account</title>
 </head>
-<style>
+  <style>
 
     .buttonClass {
     position: absolute;
@@ -26,7 +26,7 @@
     .smallButtonClass {
     position: absolute;
 
-    background-color:#00aeff;
+    background-color:#0a0a23;
     color: #fff;
     border:none;
     border-radius:10px;
@@ -46,25 +46,38 @@ h1 {
 }
 
 .grid-container {
-    float: center;
-    display: inline-grid;
+  display: inline-grid;
+  grid-template-columns: auto auto auto;
+  padding: 10px;
+  gap: 50px 100px;
 }
 .grid-item {
-    padding: 120px;
-    margin-left:-70px;
-    font-size: 30px;
-    text-align: center;
+  padding: 20px;
+  font-size: 30px;
+  text-align: center;
+    grid-column-start: 1;
+  grid-column-end: 3;
+}
+
+input {
+  border: 2px solid blue;
+  width: 33%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
 }
 
     </style>
 
 <body>
-    <div class="grid-container">
-        {% for account in accountList %}
-        <div class="grid-item">
-            <a class="buttonClass"><h1>{{ account.type }}</h1><body>${{ account.balance }}</body></a>
-        </div>
-        {% endfor %}
-    </div>
+
+<form action="/new" method = "POST">
+    <p><input type = "text" name = "accountName" placeholder="Account Name" autocomplete="off"/></p>
+
+    <p><input type = "text" name = "value" placeholder="Initial Deposit Amount" autocomplete="off"/></p>
+
+    <p><input type = "submit" class = "smallButtonClass" value = "Submit" /></p>
+</form>
+
 </body>
 </html>
