@@ -9,7 +9,7 @@
     .buttonClass {
     position: absolute;
 
-    background-color:#0066ff;
+    background-color:#52b38f;
     color: #fff;
     border:none;
     border-radius:10px;
@@ -20,13 +20,13 @@
 }
 
     .buttonClass:hover {
-    background: rgba(74, 144, 226, 1)
+    background: rgba(100, 209, 169, 1)
 }
 
     .smallButtonClass {
     position: absolute;
 
-    background-color:#00aeff;
+    background-color:#65d1a9;
     color: #fff;
     border:none;
     border-radius:10px;
@@ -37,7 +37,7 @@
 }
 
 .smallButtonClass:hover {
-    background: rgba(74, 144, 226, 1)
+    background: rgba(100, 209, 169, 1)
 }
 
 h1 {
@@ -55,8 +55,34 @@ h1 {
     font-size: 30px;
     text-align: center;
 }
+    .header {
+        padding:30px;
+        text-align: center;
+        background: #1abc9c;
+        font-size: 30px;
+    }
+
+    .headerGrid {
+        display:grid;
+        gap: 50px;
+        grid-template-columns: auto auto auto;
+    }
+
+    .headerItem {
+        grid-column-start: 1;
+        grid-column-end: 3;
+    }
 
     </style>
+
+<div class="header">
+    <h1>Banking System</h1>
+    <div class="headerGrid">
+        <div><a href="/new">New Account</a></div>
+        <div><a>Logout</a></div>
+    </div>
+
+</div>
 
 <body>
     <div class="grid-container">
