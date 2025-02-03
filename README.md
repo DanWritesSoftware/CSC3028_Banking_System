@@ -1,5 +1,5 @@
 The only current dependency is Flask
 
-Accounts are created and held in an array in the AccountHolder class :)
+Accounts can be added to a temporary global object through the '/new' page
 
-Accounts are displayed on the /home page
+Accounts are displayed on the '/home' page
