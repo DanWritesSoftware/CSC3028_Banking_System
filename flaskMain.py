@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, redirect
 from TempAccountHolder import *
+from DatabaseHandler import Database
 app = Flask(__name__)
 
-holder = AccountHolder() # global account holder for testing
+#holder = AccountHolder() # global account holder for testing
+db = Database('BankingDatabase.db') # Database Object
 
 @app.route('/login')
 def login():
@@ -10,7 +12,8 @@ def login():
 
 @app.route('/home')
 def home():
-    return render_template('home.html',accountList=holder.contents)
+    accountArray = db.getUserAccounts(1)
+    return render_template('home.html',accountList=accountArray) # TODO: Replace with dynamic user ID whith mulit-user implementation
 
 @app.route('/new', methods = ['POST', 'GET'])
 def new():
@@ -19,7 +22,8 @@ def new():
     if request.method == 'POST':
         accountName = request.form['accountName']
         accountValue = request.form['value']
-        holder.addAccount(accountName,accountValue)
+        #holder.addAccount(accountName,accountValue)
+        db.createAccount(1,accountName,accountValue) # TODO: Replace with dynamic user ID whith mulit-user implementation
         return redirect('/home')
 
 if __name__ == "__main__":
