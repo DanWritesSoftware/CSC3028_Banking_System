@@ -1,7 +1,7 @@
 class User:
-    def __init__(self, usrID, usrName:str , password: str):
+    def __init__(self, usrID: str, usrName:str , password: str):
         self.usrName = usrName
-        self.passWord = password
+        self.password = password
         self.usrID = usrID
     
     def printUserDetails(self):
