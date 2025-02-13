@@ -1,0 +1,74 @@
+    .buttonClass {
+    position: absolute;
+
+    background-color:#52b38f;
+    color: #fff;
+    border:none;
+    border-radius:10px;
+    padding:15px;
+    min-height:200px;
+    min-width: 420px;
+    text-decoration: none;
+}
+
+    .buttonClass:hover {
+    background: rgba(100, 209, 169, 1)
+}
+
+    .smallButtonClass {
+    position: absolute;
+
+    background-color:#65d1a9;
+    color: #fff;
+    border:none;
+    border-radius:10px;
+    padding:15px;
+    min-height:50px;
+    min-width: 300px;
+    text-decoration: none;
+    }
+
+    .smallButtonClass:hover {
+        background: rgba(100, 209, 169, 1)
+    }
+
+    h1 {
+        text-align: center;
+        font-family: Arial
+    }
+
+    .grid-container {
+        float: center;
+        display: inline-grid;
+    }
+    .grid-item {
+        padding: 120px;
+        margin-left:-70px;
+        font-size: 30px;
+        text-align: center;
+    }
+    .header {
+        padding:30px;
+        text-align: center;
+        background: #1abc9c;
+        font-size: 30px;
+    }
+
+    .headerGrid {
+        display:grid;
+        gap: 50px;
+        grid-template-columns: auto auto auto;
+    }
+
+    .headerItem {
+        grid-column-start: 1;
+        grid-column-end: 3;
+    }
+
+        input {
+      border: 2px solid green;
+      width: 33%;
+      padding: 12px 20px;
+      margin: 8px 0;
+      box-sizing: border-box;
+    }
