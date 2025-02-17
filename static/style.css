@@ -37,6 +37,10 @@
         font-family: Arial
     }
 
+    p.a {
+        font-family: Arial
+    }
+
     .grid-container {
         float: center;
         display: inline-grid;

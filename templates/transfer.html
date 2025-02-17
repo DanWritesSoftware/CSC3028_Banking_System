@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transfer Money</title>
+</head>
+<link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
+<body>
+
+<a href="/home">back</a>
+
+<form action="/transfer" method = "POST">
+    <p class = "a">Transfer From</p>
+    <p><input type = "number" name = "fromAccountId" placeholder="Account Number" autocomplete="off"/></p>
+
+    <p class = "a">Transfer To</p>
+    <p><input type = "number" name = "toAccountId" placeholder="Account Number" autocomplete="off"/></p>
+
+    <p class = "a">Amount</p>
+    <p><input type = "number" name = "transferAmount" placeholder="Transfer Amount" autocomplete="off" step="0.01" min="0"/></p>
+
+    <p><input type = "submit" class = "smallButtonClass" value = "Submit" /></p>
+</form>
+
+</body>
+</html>

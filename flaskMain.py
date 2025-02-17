@@ -91,5 +91,12 @@ def new():
         db.createAccount(randomAccount,1,accountName,accountValue) # TODO: Replace with dynamic user ID whith mulit-user implementation
         return redirect('/home')
 
+
+@app.route('/transfer', methods = ['POST','GET'])
+def transfer():
+    if request.method == 'GET':
+        return render_template('transfer.html')
+
+
 if __name__ == "__main__":
     app.run()
