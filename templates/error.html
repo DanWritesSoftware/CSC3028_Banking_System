@@ -2,12 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Create Account</title>
+    <title>ERROR</title>
+    <h><strong>We have encountered an error. Try logging in again.</strong></h>
 </head>
-
-<link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
-
-
 <body>
 <!-- Display flash messages here -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -21,14 +18,5 @@
             </div>
         {% endif %}
     {% endwith %}
-
-<form action="/new" method = "POST">
-    <p><input type = "text" name = "accountName" placeholder="Account Name" autocomplete="off"/></p>
-
-    <p><input type = "number" name = "value" placeholder="Initial Deposit Amount" autocomplete="off" step="0.01" min="0"/></p>
-
-    <p><input type = "submit" class = "smallButtonClass" value = "Submit" /></p>
-</form>
-
 </body>
 </html>

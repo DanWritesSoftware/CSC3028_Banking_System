@@ -10,14 +10,14 @@ class Database:
         #self.connection = sqlite3.connect(name, check_same_thread=False)
         #self.cursor = self.connection.cursor()
 
-    def createAccount(self, usrID, accName, accBalance):
+    def createAccount(self, accID, usrID, accName, accBalance):
         # Open a new connection and cursor
         connection = sqlite3.connect(self.name, check_same_thread=False)
         cursor = connection.cursor()
 
         cursor.execute(
-            "INSERT INTO Account (accType, accUserID, accValue) VALUES (?, ?, ?)",
-            (accName, usrID, accBalance)
+            "INSERT INTO Account (accID, accType, accUserID, accValue) VALUES (?, ?, ?, ?)",
+            (accID, accName, usrID, accBalance)
         )
         connection.commit()
 
@@ -86,4 +86,20 @@ class Database:
         connection.close()
 
         return users
+
+    def accountIdInUse(self, randomID): # returns T if ID is in use
+
+        # Open a new connection and cursor
+        connection = sqlite3.connect(self.name, check_same_thread=False)
+        cursor = connection.cursor()
+
+        # Check for existing accounts with matching ID
+        cursor.execute("SELECT * FROM Account WHERE accID='"+str(randomID)+"'")
+        if cursor.fetchall() != None:
+            output = True
+        output = False
+
+        connection.close()
+
+        return output
 
