@@ -1,94 +1,60 @@
 from DatabaseHandler import Database
-from User import User
+from input_validator import InputValidator
 import hashlib
+import random
 
 # Create an instance of Database
 db_manager = Database("BankingDatabase.db")
 
+Input_Validator = InputValidator()
+
+length = 10
+
 class UserManager:
-    def __init__(self, name):
-        self.name = name
+    def __init__(self):
+        pass
 
-    def signUp(self):
+    def signUp(self, userName, email, password, confirmPassword):
 
-        special_characters = {'!', '@', '#', '$', '^', '&', '*', '(', ')'}
+        if db_manager.accountIdInUse(userID):
+            print("Duplicate User ID, regenerating.")
 
-        email_validators = {'@' , '.com' , '.net' , '.gov' , '.edu'}
+        if not Input_Validator.validate_username(userName):
+            print("Invalid username, try again")
 
-        while True:
+        if not Input_Validator.validate_email(email):
+            print("Invalid Email, try again")
 
-            email = input("Enter a valid email address: ")
+        if not Input_Validator.validate_password_complexity(password):
+            print("Password not complex enough, please try again")
 
-            if not any(char in email_validators for char in email):
-                print("Please enter a valid email address. Try Again")
-                continue
-
-            password = input("Enter a password that contains a special character: ")
-
-            # Check if password contains at least one special character
-            if not any(char in special_characters for char in password):
-                print(" Password must contain at least one special character. Try again!")
-                continue  # Ask for password again
-            
-            confirmPassword = input("Please Re-Enter your password: ")
-
-            if confirmPassword != password:
-                print(" Error: Passwords do not match. Try again!")
-                continue  # Ask for password again
-
-            # If both conditions are met, exit the loop
-            break
-
+        if confirmPassword != password:
+            return ("Passwords do not match.")
+        
         # Hash the password for security
         hash1 = hashlib.md5(password.encode()).hexdigest()
 
-        # Open file in APPEND mode ("a"), so it doesn't overwrite existing data
-        with open("credentials.txt", "a") as file:
-            file.write(email + "\n")  # Write email
-            file.write(hash1 + "\n")  # Write hashed password
-            file.write("---\n")  # Separator for clarity
-            file.flush()  # Ensure immediate write
+        while True:
+            userID = ''.join(random.choices('0123456789', k = length))
+            if not db_manager.accountIdInUse(userID):
+                break
 
-        print(" User registered successfully!")
+        db_manager.createUser(userID, userName, email, hash1)
+
+        return (" User registered successfully!")
 
 
-    def login(self):
-        email = input("Please Enter your email: ")
-        password = input("Please enter your password: ")
-
+    def login(self, userName, password,):
         authorizerHash = hashlib.md5(password.encode()).hexdigest()
 
         try:
-            with open("credentials.txt", "r") as file:
-                lines = file.readlines()
-            
-            for i in range(0, len(lines), 3):
-                storedEmail = lines[i].strip()
-                storedPassword = lines[i +1].strip()
+            if db_manager.userLogin(userName, authorizerHash):
 
-                if email == storedEmail and authorizerHash == storedPassword:
-                    print("Log in Succesful!")
-                    return
-            print("Login failed, invalid email or password.")
+                return("User Logged in Succesfully.")
+            else:
+                return("Username or Password incorrect, login failed")
 
-        except FileNotFoundError:
-            print(" Error: No user registered yet. Please sign up first.")
-
-
-# Create an instance of UserManager and call the different functions
-user_manager = UserManager("TestUser")
-
-user_manager.signUp()
-
-
-
-
-
-
-
-
-
-
-
+        except Exception as e:
+            return("Error logging in.")
 
 

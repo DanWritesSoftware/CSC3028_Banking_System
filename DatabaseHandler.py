@@ -25,14 +25,14 @@ class Database:
         connection.close()
         return True
     
-    def createUser(self, usrID, usrName, password):
+    def createUser(self, usrID, usrName, email, password):
         #open a new connection and cursor
         connection = sqlite3.connect(self.name, check_same_thread=False)
         cursor = connection.cursor()
 
         cursor.execute(
-            "INSERT INTO User (usrID, usrName, password) VALUES (?, ?, ?)",
-            (usrID, usrName, password)
+            "INSERT INTO User (usrID, usrName, email, password) VALUES (?, ?, ?, ?)",
+            (usrID, usrName, email, password)
         )
         connection.commit()
 
@@ -79,13 +79,31 @@ class Database:
         for row in rows:
             usrID = row[0]
             userName = row[1]
-            password = row[2]
-            user = User(usrID,userName,password)
+            email = row[2]
+            password = row[3]
+            user = User(usrID,userName,email,password)
             users.append(user)
 
         connection.close()
 
         return users
+    
+    def userLogin(self, userName, password):
+        #opens a new connetion and cursor
+        connection = sqlite3.connect(self.name, check_same_thread=False)
+        cursor = connection.cursor()
+
+        cursor.execute("Select usrName, password FROM user WHERE usrName='"+str(userName)+"' AND password='"+str(password)+"'")
+        if cursor.fetchone() != None:
+            print ("Log in Succesful.")
+            output = True
+        else:
+            print("Log In Failed.")
+            output = False
+
+        connection.close()
+
+        return output
 
     def accountIdInUse(self, randomID): # returns T if ID is in use
 
@@ -102,4 +120,3 @@ class Database:
         connection.close()
 
         return output
-

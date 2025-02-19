@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+</head>
+
+<link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
+
+
+<body>
+
+<a href="/home">back</a>
+
+<!-- Display flash messages here -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashed-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+<form action="/new" method = "POST">
+    <p><input type = "text" name = "userName" placeholder="User Name:" autocomplete="off"/></p>
+
+    <p><input type = "text" name = "email" placeholder="Email" autocomplete="off" step="0.01" min="0"/></p>
+
+    <p><input type = "text" name = "password" placeholder="Password" autocomplete="off" step="0.01" min="0"/></p>
+
+    <p><input type = "text" name = "confirmPassword" placeholder="Confirm Password" autocomplete="off" step="0.01" min="0"/></p>
+
+    <p><input type = "submit" class = "smallButtonClass" value = "Submit" /></p>
+</form>
+
+</body>
+</html>

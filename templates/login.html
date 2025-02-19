@@ -5,6 +5,29 @@
     <title>Login</title>
 </head>
 <body>
-hello world! log in
-</body>
+
+    <a href="/home">back</a>
+    
+    <!-- Display flash messages here -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flashed-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+    
+    <form action="/new" method = "POST">
+        <p><input type = "text" username = "username:" placeholder="username" autocomplete="off"/></p>
+    
+        <p><input type = "text" name = "password:" placeholder="password" autocomplete="off" step="0.01" min="0"/></p>
+    
+        <p><input type = "submit" class = "smallButtonClass" value = "Submit" /></p>
+    </form>
+    
+    </body>
 </html>

@@ -1,12 +1,14 @@
 from flask import Flask, render_template, request, redirect, flash
 from DatabaseHandler import Database
 from input_validator import InputValidator
+from UserManagement import UserManager
 import random # for account number generation
 app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'idkwhatthisishaha' # TODO: figure out what this is
 
 db = Database('BankingDatabase.db') # Database Object
+um = UserManager("UserManager")
 valid = InputValidator()
 
 @app.route('/')
@@ -91,12 +93,26 @@ def new():
         db.createAccount(randomAccount,1,accountName,accountValue) # TODO: Replace with dynamic user ID whith mulit-user implementation
         return redirect('/home')
 
+@app.route('/register', methods = ['POST', 'GET'])
+def newUser():
+    if request.method == 'GET':
+        #Load Form
+        return render_template('register.html')
+    if request.method == 'POST':
+        userName = request.form['userName']
+        email = request.form['email']
+        password = request.form['password']
+        confirmPassword = request.form['confirmPassword']
 
+    message = um.signUp(userName, email, password, confirmPassword)
+    flash(message)
+    return redirect('/register')
+        
 @app.route('/transfer', methods = ['POST','GET'])
 def transfer():
     if request.method == 'GET':
         return render_template('transfer.html')
-
+    
 
 if __name__ == "__main__":
     app.run()
