@@ -136,3 +136,85 @@ class Database:
         connection.close()
 
         return output
+
+    def withdrawFromAccount(self, accountID: str, amount: float):
+        # Open a new connection and cursor
+        connection = sqlite3.connect(self.name, check_same_thread=False)
+        cursor = connection.cursor()
+
+        output = []
+
+        # Get current value of account
+        cursor.execute("SELECT accValue FROM Account WHERE accID='" + str(accountID) + "'")
+        result = cursor.fetchall()
+
+        # Ensure there is a result
+        if result:
+            value = result[0][0] # Extract the value from the first row and first column
+        else:
+            output.append("Error: Withdrawal Account not found")
+            return output
+
+        # Check for errors, and return any as a list of strings to display as errors
+        if float(value) < amount:
+            output.append("Error Insufficient Funds")
+            return output
+
+        #if not self.accountIdInUse(str(accountID)):
+        #    output.append("Error Account ID Does Not Exist")
+
+
+        if not output: # (if no errors)
+            # Subtract from account
+            newValue = value - amount
+            cursor.execute(
+                "UPDATE Account SET accValue = ? WHERE accID = ?",
+                (newValue, accountID)
+            )
+            connection.commit()
+
+        # close connection
+        connection.close()
+
+        return output
+
+    def depositToAccount(self, accountID: str, amount: float):
+        # Open a new connection and cursor
+        connection = sqlite3.connect(self.name, check_same_thread=False)
+        cursor = connection.cursor()
+
+        output = []
+
+        # Get current value of account
+        cursor.execute("SELECT accValue FROM Account WHERE accID='" + str(accountID) + "'")
+        result = cursor.fetchall()
+
+        # Ensure there is a result
+        if result:
+            value = result[0][0]  # Extract the value from the first row and first column
+        else:
+            output.append("Error: Depositing Account not found")
+            return output
+
+        # Check for errors, and return any as a list of strings to display as errors
+        if float(value) < 0:
+            output.append("Error Cannot Deposit Less Than Zero")
+            return output
+
+       # if not self.accountIdInUse(str(accountID)):
+       #     output.append("Error Account ID Does Not Exist")
+
+
+        if not output: # (if no errors)
+            # Deposit to account
+            newValue = value + amount
+            cursor.execute(
+                "UPDATE Account SET accValue = ? WHERE accID = ?",
+                (newValue, accountID)
+            )
+            connection.commit()
+
+        # close connection
+        connection.close()
+
+        return output
