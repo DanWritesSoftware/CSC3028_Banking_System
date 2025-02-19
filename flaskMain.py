@@ -104,9 +104,15 @@ def newUser():
         password = request.form['password']
         confirmPassword = request.form['confirmPassword']
 
-    message = um.signUp(userName, email, password, confirmPassword)
+        # Generate Unique User ID
+        randomAccount = random.randint(1000000000, 9999999999)
+        # Regenerate if in use
+        while db.userIdInUse(randomAccount):
+            randomAccount = random.randint(1000000000, 999999999)
+
+    message = um.signUp(userName, email, password, confirmPassword, randomAccount)
     flash(message)
-    return redirect('/register')
+    return redirect('/home')
         
 @app.route('/transfer', methods = ['POST','GET'])
 def transfer():

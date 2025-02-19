@@ -120,3 +120,19 @@ class Database:
         connection.close()
 
         return output
+
+    def userIdInUse(self: str, randomID: str):  # returns T if ID is in use
+
+        # Open a new connection and cursor
+        connection = sqlite3.connect(self.name, check_same_thread=False)
+        cursor = connection.cursor()
+
+        # Check for existing accounts with matching ID
+        cursor.execute("SELECT * FROM User WHERE usrID='" + str(randomID) + "'")
+        if cursor.fetchall() != None:
+            output = True
+        output = False
+
+        connection.close()
+
+        return output

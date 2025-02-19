@@ -14,10 +14,7 @@ class UserManager:
     def __init__(self):
         pass
 
-    def signUp(self, userName:str, email:str, password:str, confirmPassword:str):
-
-        if db_manager.accountIdInUse(userID):
-            print("Duplicate User ID, regenerating.")
+    def signUp(self, userName:str, email:str, password:str, confirmPassword:str, userID:int):
 
         if not Input_Validator.validate_username(userName):
             print("Invalid username, try again")
