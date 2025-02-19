@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'idkwhatthisishaha' # TODO: figure out what this is
 
 db = Database('BankingDatabase.db') # Database Object
-um = UserManager("UserManager")
+um = UserManager()
 valid = InputValidator()
 
 @app.route('/')
