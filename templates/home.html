@@ -11,12 +11,25 @@
     <h1>Banking System</h1>
     <div class="headerGrid">
         <div><a href="/register">Register</a></div>
-        <div><a href="/new">New Account</a></div>
         <div><a href="/login">Login</a></div>
         <div><a>Logout</a></div>
+        <div><a href="/new">New Bank Account</a></div>
+        <div><a href="/transfer">Transfer Money</a></div>
     </div>
 
 </div>
+<!-- Display flash messages here -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashed-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
 
 <body>
     <div class="grid-container">

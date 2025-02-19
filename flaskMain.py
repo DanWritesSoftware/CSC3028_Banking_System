@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, flash
 from DatabaseHandler import Database
 from input_validator import InputValidator
 from UserManagement import UserManager
+from TransferHandler import Transfer
 import random # for account number generation
 app = Flask(__name__)
 
@@ -133,7 +134,18 @@ def passwordReset():
 def transfer():
     if request.method == 'GET':
         return render_template('transfer.html')
-    
-
+    if request.method == 'POST':
+        fromAccountID = request.form['fromAccountId']
+        toAccountID = request.form['toAccountId']
+        transferAmount = request.form['transferAmount']
+        t = Transfer(fromAccountID,toAccountID,float(transferAmount),db)
+        errors = t.tryTransfer()
+        if errors:
+            for error in errors:
+                flash(error,'error')
+            return redirect('/transfer')
+        else:
+            flash('Transfer Success!')
+            return redirect('/home')
 if __name__ == "__main__":
     app.run()
