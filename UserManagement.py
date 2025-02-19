@@ -41,7 +41,7 @@ class UserManager:
         return (" User registered successfully!")
 
 
-    def login(self, userName:str, password:str,):
+    def login(self, userName:str, password:str):
         authorizerHash = hashlib.md5(password.encode()).hexdigest()
 
         try:
@@ -53,5 +53,22 @@ class UserManager:
 
         except Exception as e:
             return("Error logging in.")
+        
+    def passwordReset(self, userName:str, email:str, password: str, confirmPassword: str):
+
+        if confirmPassword != password:
+            return("Passwords do not match.")
+        
+        authorizerHash = hashlib.md5(password.encode()).hexdigest()
+
+        db_manager.passwordReset(userName, email, authorizerHash)
+
+        try: 
+            if db_manager.passwordReset(userName, email, authorizerHash):
+                return("Password Reset succesfully.")
+            else: 
+                return("Password reset failed")
+        except Exception as e:
+            return("Error resetting password")
 
 

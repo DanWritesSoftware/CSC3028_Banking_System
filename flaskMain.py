@@ -113,6 +113,21 @@ def newUser():
     message = um.signUp(userName, email, password, confirmPassword, randomAccount)
     flash(message)
     return redirect('/home')
+
+@app.route('/passwordReset', methods = ['POST', 'GET'])
+def passwordReset():
+    if request.method == 'GET':
+        #Load Form
+        return render_template('passwordReset.html')
+    if request.method == 'POST':
+        userName = request.form['userName']
+        email = request.form['email']
+        password = request.form['password']
+        confirmPassword = request.form['confirmPassword']
+
+        message = um.passwordReset(userName, email, password, confirmPassword)
+        flash(message)
+        return redirect('/home')
         
 @app.route('/transfer', methods = ['POST','GET'])
 def transfer():

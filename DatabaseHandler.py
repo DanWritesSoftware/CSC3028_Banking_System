@@ -136,3 +136,22 @@ class Database:
         connection.close()
 
         return output
+    
+    def passwordReset(self, userName: str , email: str ,password: str): # lets a user reset their password in the database
+
+        # Open a new connection and cursor
+        connection = sqlite3.connect(self, check_same_thread=False)
+        cursor = connection.cursor()
+
+        # Find User's account from username and email
+        cursor.execute(
+            "UPDATE user set password ='" + str(password) + "' WHERE usrName='" + str(userName) + "' AND email ='" + str(email) + "'"
+            )
+        
+        cursor.close()
+        
+        connection.commit()
+
+        connection.close()
+
+        return True
