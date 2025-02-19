@@ -3,6 +3,8 @@ from Account import Account
 
 from User import User
 
+print("🔍 Running updated DatabaseHandler.py version")
+
 class Database:
     def __init__(self, name):
         self.name = name
@@ -222,13 +224,14 @@ class Database:
     def passwordReset(self, userName: str , email: str ,password: str): # lets a user reset their password in the database
 
         # Open a new connection and cursor
-        connection = sqlite3.connect(self, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False)
         cursor = connection.cursor()
 
         # Find User's account from username and email
         cursor.execute(
-            "UPDATE user set password ='" + str(password) + "' WHERE usrName='" + str(userName) + "' AND email ='" + str(email) + "'"
-            )
+        "UPDATE User SET password = ? WHERE usrName = ? AND email = ?", 
+        (password, userName, email)
+        )
         
         cursor.close()
         

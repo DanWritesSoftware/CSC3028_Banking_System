@@ -121,13 +121,23 @@ def passwordReset():
         #Load Form
         return render_template('passwordReset.html')
     if request.method == 'POST':
-        userName = request.form['userName']
-        email = request.form['email']
-        password = request.form['password']
-        confirmPassword = request.form['confirmPassword']
+        userName = request.form.get('userName')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirmPassword = request.form.get('confirmPassword')
+
+        print("Received form data:", userName, email, password, confirmPassword)  # Debugging
+
+        if not all([userName, email, password, confirmPassword]):
+            flash("All fields are required.")
+            return redirect('/passwordReset')
+
+        if password != confirmPassword:
+            flash("passwords do not match, error")
+            return redirect('/passwordReset')
 
         message = um.passwordReset(userName, email, password, confirmPassword)
-        flash(message)
+        flash(message, 'success')
         return redirect('/home')
         
 @app.route('/transfer', methods = ['POST','GET'])

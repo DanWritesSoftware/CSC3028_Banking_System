@@ -11,8 +11,8 @@ Input_Validator = InputValidator()
 length = 10
 
 class UserManager:
-    def __init__(self):
-        pass
+    def __init__(self, name):
+        self.name = name
   
     def signUp(self, userName:str, email:str, password:str, confirmPassword:str, userID:int):
 
@@ -63,8 +63,6 @@ class UserManager:
             return("Passwords do not match.")
         
         authorizerHash = hashlib.md5(password.encode()).hexdigest()
-
-        db_manager.passwordReset(userName, email, authorizerHash)
 
         try: 
             if db_manager.passwordReset(userName, email, authorizerHash):
