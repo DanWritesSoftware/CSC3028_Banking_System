@@ -13,7 +13,7 @@ length = 10
 class UserManager:
     def __init__(self):
         pass
-
+  
     def signUp(self, userName:str, email:str, password:str, confirmPassword:str, userID:int):
 
         if not Input_Validator.validate_username(userName):
@@ -55,6 +55,9 @@ class UserManager:
             return("Error logging in.")
         
     def passwordReset(self, userName:str, email:str, password: str, confirmPassword: str):
+
+        if not Input_Validator.validate_password_complexity(password):
+            print("Invalid Password, try again")
 
         if confirmPassword != password:
             return("Passwords do not match.")
