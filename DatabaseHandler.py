@@ -10,7 +10,7 @@ class Database:
         #self.connection = sqlite3.connect(name, check_same_thread=False)
         #self.cursor = self.connection.cursor()
 
-    def createAccount(self, accID, usrID, accName, accBalance):
+    def createAccount(self, accID: str, usrID: str, accName: str, accBalance: float):
         # Open a new connection and cursor
         connection = sqlite3.connect(self.name, check_same_thread=False)
         cursor = connection.cursor()
@@ -25,7 +25,7 @@ class Database:
         connection.close()
         return True
     
-    def createUser(self, usrID, usrName, email, password):
+    def createUser(self, usrID: int, usrName: str, email: str, password: str):
         #open a new connection and cursor
         connection = sqlite3.connect(self.name, check_same_thread=False)
         cursor = connection.cursor()
@@ -40,7 +40,7 @@ class Database:
         connection.close()
         return True
 
-    def getUserAccounts(self, usrID):
+    def getUserAccounts(self, usrID: str):
         # Open a new connection and cursor
         connection = sqlite3.connect(self.name, check_same_thread=False)
         cursor = connection.cursor()
@@ -65,7 +65,7 @@ class Database:
 
         return accounts
     
-    def getUsers(self, usrID):
+    def getUsers(self, usrID: str):
         # Open a new connection and cursor
         connection = sqlite3.connect(self.name, check_same_thread=False)
         cursor = connection.cursor()
@@ -88,7 +88,7 @@ class Database:
 
         return users
     
-    def userLogin(self, userName, password):
+    def userLogin(self, userName: str, password: str):
         #opens a new connetion and cursor
         connection = sqlite3.connect(self.name, check_same_thread=False)
         cursor = connection.cursor()
@@ -105,7 +105,7 @@ class Database:
 
         return output
 
-    def accountIdInUse(self, randomID): # returns T if ID is in use
+    def accountIdInUse(self: str, randomID: str): # returns T if ID is in use
 
         # Open a new connection and cursor
         connection = sqlite3.connect(self.name, check_same_thread=False)

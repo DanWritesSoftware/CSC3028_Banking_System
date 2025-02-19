@@ -14,7 +14,7 @@ class UserManager:
     def __init__(self):
         pass
 
-    def signUp(self, userName, email, password, confirmPassword):
+    def signUp(self, userName:str, email:str, password:str, confirmPassword:str):
 
         if db_manager.accountIdInUse(userID):
             print("Duplicate User ID, regenerating.")
@@ -44,7 +44,7 @@ class UserManager:
         return (" User registered successfully!")
 
 
-    def login(self, userName, password,):
+    def login(self, userName:str, password:str,):
         authorizerHash = hashlib.md5(password.encode()).hexdigest()
 
         try:
