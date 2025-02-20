@@ -22,17 +22,32 @@ A secure and efficient banking system built with Flask, SQLite, and robust authe
 ## Project Structure
 
 ```
-/banking-app
-│── templates/           # HTML templates for frontend
-│── static/              # Static assets (CSS, JS, images)
-│── flask_main.py        # Main Flask application
-│── user_management.py   # Handles user authentication & 2FA
-│── session_manager.py   # Manages user sessions
-│── database_handler.py  # Handles database operations
-│── input_validator.py   # Validates user input
-│── account.py           # Account class representation
-│── requirements.txt     # Dependencies list
-│── README.md            # Project documentation
+/BankingApplication
+│── .idea/                   # IDE configuration files
+│── .vscode/                 # VS Code settings
+│── __pycache__/             # Compiled Python files
+│── flask_session/           # Flask session storage
+│── static/                  # Static assets (CSS, JS, images)
+│── templates/               # HTML templates for frontend
+│── Account.py               # Account class representation
+│── BankingDatabase.db       # SQLite database file
+│── BankingDatabase.sqbpro   # SQLite project file
+│── Checking.py              # Checking account class
+│── Investing.py             # Investing account class
+│── Savings.py               # Savings account class
+│── User.py                  # User class representation
+│── database_handler.py      # Handles database operations
+│── flask_main.py            # Main Flask application
+│── input_validator.py       # Validates user input
+│── input_validator_test.py  # Tests for input validation
+│── session_manager.py       # Manages user sessions
+│── session_manager_test.py  # Tests for session management
+│── temp_account_holder.py   # Temporary account holder logic
+│── transfer_handler.py      # Handles money transfers
+│── user_management.py       # Handles user authentication & 2FA
+│── user_management_test.py  # Tests for user management
+│── Requirements.txt         # Dependencies list
+│── README.md                # Project documentation
 ```
 
 ## Installation
@@ -99,3 +114,4 @@ Install them with:
 ```sh
 pip install -r requirements.txt
 ```
+
