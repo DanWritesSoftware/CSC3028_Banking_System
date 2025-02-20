@@ -22,32 +22,32 @@ A secure and efficient banking system built with Flask, SQLite, and robust authe
 ## Project Structure
 
 ```
-/BankingApplication
-│── .idea/                   # IDE configuration files
-│── .vscode/                 # VS Code settings
-│── __pycache__/             # Compiled Python files
-│── flask_session/           # Flask session storage
-│── static/                  # Static assets (CSS, JS, images)
-│── templates/               # HTML templates for frontend
-│── Account.py               # Account class representation
-│── BankingDatabase.db       # SQLite database file
-│── BankingDatabase.sqbpro   # SQLite project file
-│── Checking.py              # Checking account class
-│── Investing.py             # Investing account class
-│── Savings.py               # Savings account class
-│── User.py                  # User class representation
-│── database_handler.py      # Handles database operations
-│── flask_main.py            # Main Flask application
-│── input_validator.py       # Validates user input
-│── input_validator_test.py  # Tests for input validation
-│── session_manager.py       # Manages user sessions
-│── session_manager_test.py  # Tests for session management
-│── temp_account_holder.py   # Temporary account holder logic
-│── transfer_handler.py      # Handles money transfers
-│── user_management.py       # Handles user authentication & 2FA
-│── user_management_test.py  # Tests for user management
-│── Requirements.txt         # Dependencies list
-│── README.md                # Project documentation
+/banking-app
+│── .idea/                 # IDE settings
+│── .vscode/               # VS Code settings
+│── __pycache__/           # Compiled Python files
+│── flask_session/         # Session storage
+│── static/                # Static assets (CSS, JS, images)
+│── templates/             # HTML templates for frontend
+│── Account.py             # Account class representation
+│── BankingDatabase.db     # SQLite database file
+│── BankingDatabase.sqbpro # SQLite database project file
+│── Checking.py            # Checking account operations
+│── Investing.py           # Investing account operations
+│── Savings.py             # Savings account operations
+│── User.py                # User class representation
+│── database_handler.py    # Handles database operations
+│── flask_main.py          # Main Flask application
+│── input_validator.py     # Validates user input
+│── input_validator_test.py # Tests for input validation
+│── session_manager.py     # Manages user sessions
+│── session_manager_test.py # Tests for session management
+│── temp_account_holder.py # Temporary account handling
+│── transfer_handler.py    # Handles fund transfers
+│── user_management.py     # Handles user authentication & 2FA
+│── user_management_test.py # Tests for user management
+│── requirements.txt       # Dependencies list
+│── README.md              # Project documentation
 ```
 
 ## Installation
@@ -63,17 +63,12 @@ A secure and efficient banking system built with Flask, SQLite, and robust authe
    pip install -r requirements.txt
    ```
 
-3. Set up the database (Ensure SQLite is installed):
-   ```sh
-   python setup_database.py
-   ```
-
-4. Run the Flask application:
+3. Run the Flask application:
    ```sh
    python flask_main.py
    ```
 
-5. Open the application in your browser:
+4. Open the application in your browser:
    ```
    http://127.0.0.1:5000
    ```
