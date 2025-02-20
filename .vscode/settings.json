@@ -1,0 +1,11 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "DB",
+            "database": "${workspaceFolder:CSC3028_Banking_System}/BankingDatabase.db"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}

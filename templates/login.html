@@ -29,5 +29,12 @@
         <p><input type = "submit" class = "smallButtonClass" value = "Submit" /></p>
     </form>
     
+    <!-- Two factor authentication notice -->
+        {% if session.get('2fa_email') %}
+            <div class="2fa-notice">
+                <p>A verification code has been sent to {{ session['2fa_email'] }}</p>
+            </div>
+        {% endif %}
+
     </body>
 </html>

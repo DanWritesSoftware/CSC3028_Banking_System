@@ -1,24 +1,101 @@
-The only current dependency is Flask
+# Banking Application
 
-Accounts can be added to a temporary global object through the '/new' page
+A secure and efficient banking system built with Flask, SQLite, and robust authentication mechanisms, including password hashing and two-factor authentication (2FA).
 
-Accounts are displayed on the '/home' page
+## Features
 
+- **User Authentication**
+  - Secure registration and login with hashed passwords.
+  - Two-Factor Authentication (2FA) via email verification.
+  - Secure session management with Flask-Session.
+  
+- **Account Management**
+  - Create user accounts with unique IDs.
+  - Retrieve and display user accounts.
+  - Perform deposits and withdrawals with validation.
 
-### InputValidator Class
-The InputValidator class validates user inputs to ensure data integrity. It includes methods for validating:
-- Account numbers (10 digits).
-- Currency amounts (positive, up to 2 decimal places).
-- Transaction limits (positive, ≤ 10000).
-- Passwords (8+ characters, with uppercase, lowercase, digits, and special characters).
-- Usernames (alphanumeric, 5-20 characters).
-- Emails (standard format).
-- Roles (Admin, Teller, Customer).
+- **Security**
+  - Password complexity enforcement.
+  - Protection against SQL injection via parameterized queries.
+  - Secure email-based 2FA.
 
-#### Usage
-python
-from InputValidator import InputValidator
+## Project Structure
 
-# Example: Validate an account number
-if InputValidator.validate_account_number("1234567890"):
-    print("Valid account number")
+```
+/banking-app
+│── templates/           # HTML templates for frontend
+│── static/              # Static assets (CSS, JS, images)
+│── flask_main.py        # Main Flask application
+│── user_management.py   # Handles user authentication & 2FA
+│── session_manager.py   # Manages user sessions
+│── database_handler.py  # Handles database operations
+│── input_validator.py   # Validates user input
+│── account.py           # Account class representation
+│── requirements.txt     # Dependencies list
+│── README.md            # Project documentation
+```
+
+## Installation
+
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/yourusername/banking-app.git
+   cd banking-app
+   ```
+
+2. Install dependencies:
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+3. Set up the database (Ensure SQLite is installed):
+   ```sh
+   python setup_database.py
+   ```
+
+4. Run the Flask application:
+   ```sh
+   python flask_main.py
+   ```
+
+5. Open the application in your browser:
+   ```
+   http://127.0.0.1:5000
+   ```
+
+## Usage
+
+### User Registration
+- Users can sign up via `/signup`
+- Validates username, email, and password complexity.
+- Stores securely hashed passwords.
+
+### User Login & 2FA
+- Users log in via `/login`
+- If login is successful, a 2FA email is sent.
+- Users enter a 6-digit verification code on `/verify-2fa`
+
+### Account Management
+- Users can view their accounts on `/dashboard`
+- Deposit and withdrawal operations are validated.
+
+### Logout
+- Users can log out via `/logout`, which clears the session.
+
+## Security Features
+
+- **Password Hashing**: Uses bcrypt to store passwords securely.
+- **Two-Factor Authentication (2FA)**: Adds an extra layer of security.
+- **Session Security**: Flask-Session ensures authenticated sessions.
+- **Input Validation**: Prevents invalid or malicious input.
+
+## Dependencies
+
+- Flask
+- Flask-Session
+- bcrypt
+
+Install them with:
+```sh
+pip install -r requirements.txt
+```
