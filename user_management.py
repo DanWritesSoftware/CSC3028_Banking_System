@@ -38,6 +38,18 @@ class UserManager:
     def __init__(self) -> None:
         pass
 
+    def create_account(self, user_id: str) -> dict:
+        """Creates a new bank account with 10-digit number."""
+        account_number = ''.join(random.choices('0123456789', k=10))
+        if db_manager.create_account(
+            acc_id=account_number,  # First parameter matches database method
+            usr_id=user_id,        # Second parameter
+            acc_name="Primary Checking",  # Default account name
+            acc_balance=0.0       # Default starting balance
+        ):
+            return {"account_number": account_number}
+        return {}
+
     def sign_up(self, username: str, email: str, password: str, confirm_password: str) -> str:
         """Registers a new user with hashed password security."""
         if not input_validator.validate_username(username):
@@ -125,7 +137,7 @@ class UserManager:
                 server.login(EMAIL_FROM, EMAIL_PASSWORD)
                 server.send_message(msg)
             logging.info("Verification email sent to %s", email)
-        except smtplib.SMTPException as e:  # More specific exception
+        except smtplib.SMTPException as e:
             logging.error("Failed to send verification email: %s", str(e))
 
     def password_reset(self, username: str, email: str,
