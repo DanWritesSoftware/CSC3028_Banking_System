@@ -3,6 +3,10 @@
 <head>
     <title>2FA Verification</title>
 </head>
+
+<link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
+
+
 <body>
     <h1>Two-Factor Authentication</h1>
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -15,7 +19,7 @@
     <form method="POST">
         <p>Enter the 6-digit code sent to your email:</p>
         <input type="text" name="code" placeholder="Verification Code" required>
-        <button type="submit">Verify</button>
+        <button type="submit" class="smallButtonClass">Verify</button>
     </form>
     <p>Didn't receive the code? <a href="/login">Try again</a></p>
 </body>

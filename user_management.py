@@ -8,6 +8,7 @@ import random
 import sqlite3
 import time
 import smtplib
+import socket
 from email.message import EmailMessage
 from typing import Optional, Dict
 
@@ -27,8 +28,8 @@ USER_ID_LENGTH = 10
 CODE_EXPIRATION = 600  # 10 minutes in seconds
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-EMAIL_FROM = "yourbank@example.com"
-EMAIL_PASSWORD = "your_email_password"
+EMAIL_FROM = "csc3028.evil.banking.system"
+EMAIL_PASSWORD = "doldkejwyvqplril"
 
 class UserManager:
     """Handles user authentication, registration, and 2FA."""
@@ -37,6 +38,19 @@ class UserManager:
 
     def __init__(self) -> None:
         pass
+
+    def create_account(self, user_id: str) -> dict:
+        """Creates a new bank account with 10-digit number."""
+        account_number = ''.join(random.choices('0123456789', k=10))
+        if db_manager.create_account(
+                acc_id=account_number,  # First parameter matches database method
+                usr_id=user_id,  # Second parameter
+                acc_name="Primary Checking",  # Default account name
+                acc_balance=0.0  # Default starting balance
+        ):
+            return {"account_number": account_number}
+        return {}
+
 
     def sign_up(self, username: str, email: str, password: str, confirm_password: str) -> str:
         """Registers a new user with hashed password security."""
@@ -120,19 +134,27 @@ class UserManager:
         msg['To'] = email
 
         try:
-            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=60) as server:
                 server.starttls()
                 server.login(EMAIL_FROM, EMAIL_PASSWORD)
                 server.send_message(msg)
             logging.info("Verification email sent to %s", email)
-        except smtplib.SMTPException as e:  # More specific exception
-            logging.error("Failed to send verification email: %s", str(e))
-
+        except smtplib.SMTPException as e:
+            logging.error("SMTP error occurred: %s", str(e))
+        except socket.error as se:
+            logging.error("Socket error occurred: %s", str(se))
+        except OSError as oe:
+            logging.error("OS error occurred: %s", str(oe))
+        except Exception as ex:
+            logging.error("Unexpected error occurred: %s", str(ex))
     def password_reset(self, username: str, email: str,
                      new_password: str, confirm_password: str) -> str:
         """Handles password reset."""
         if new_password != confirm_password:
             return "Passwords do not match."
+
+        if not input_validator.validate_password_complexity(new_password):
+            return "Password not secure."
 
         hashed_password = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
         try:
@@ -143,3 +165,7 @@ class UserManager:
         except sqlite3.Error as e:
             logging.error("Database error: %s", e)
             return "Error resetting password."
+
+    def get_database(self):
+        return db_manager
+

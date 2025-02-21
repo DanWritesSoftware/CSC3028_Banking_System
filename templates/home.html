@@ -8,12 +8,12 @@
 <link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
 
 <div class="header">
-    <h1>Banking System</h1>
+    <h1>Evil Banking System</h1>
+    <h4>Welcome, {{ username }}</h4>
     <div class="headerGrid">
-        <div><a href="/register">Register</a></div>
         <div><a href="/login">Login</a></div>
-        <div><a href="/passwordReset">Reset Password</a></div>
-        <div><a>Logout</a></div>
+        <div><a href="/logout">Logout</a></div>
+        <div><a href="/password-reset">Reset Password</a></div>
         <div><a href="/new">New Bank Account</a></div>
         <div><a href="/transfer">Transfer Money</a></div>
     </div>
@@ -25,7 +25,7 @@
             <div class="flashed-messages">
                 {% for category, message in messages %}
                     <div class="flash-message {{ category }}">
-                        {{ message }}
+                        <h4>{{ message }}</h4>
                     </div>
                 {% endfor %}
             </div>
@@ -34,7 +34,7 @@
 
 <body>
     <div class="grid-container">
-        {% for account in accountList %}
+        {% for account in account_list %}
         <div class="grid-item">
             <a class="buttonClass"><h1>{{ account.type }}</h1><body>${{ account.balance }}</body></a>
         </div>

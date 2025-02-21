@@ -4,7 +4,7 @@ This module handles database operations for the banking system.
 """
 
 import sqlite3
-from account import Account
+from Account import Account
 
 class Database:
     """
