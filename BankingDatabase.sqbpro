@@ -1,4 +1,49 @@
-<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="BankingDatabase.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="987"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="0"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="Account" custom_title="0" dock_id="1" table="4,7:mainAccount"/><dock_state state="000000ff00000000fd00000001000000020000000000000000fc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000ffffffff0000011300ffffff000000000000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="SQL 1*">Update User
-set password = 'Evil password'
-WHERE usrName = 'Grungus' AND email = 'Grungus@gmail.com'
-</sql><current_tab id="0"/></tab_sql></sqlb_project>
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="BankingDatabase.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure pragmas browser query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="5566"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="User" custom_title="0" dock_id="1" table="4,4:mainUser"/><dock_state state="000000ff00000000fd00000001000000020000043c000002aefc0100000001fb000000160064006f0063006b00420072006f007700730065003101000000000000043c0000012400ffffff000002690000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="Account" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="85"/><column index="2" value="58"/><column index="3" value="70"/><column index="4" value="78"/><column index="5" value="40"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="User" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="85"/><column index="2" value="101"/><column index="3" value="226"/><column index="4" value="300"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="auditLog" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="29"/><column index="2" value="78"/><column index="3" value="71"/><column index="4" value="300"/><column index="5" value="300"/><column index="6" value="156"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="auditUserCreationLog" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="67"/><column index="2" value="117"/><column index="3" value="124"/><column index="4" value="80"/><column index="5" value="123"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="auditUserManagementLog" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="128"/><column index="2" value="155"/><column index="3" value="147"/><column index="4" value="106"/><column index="5" value="132"/><column index="6" value="165"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1*">PRAGMA journal_mode=WAL;
+</sql><sql name="Edit Trigger log_user_update*">DROP TRIGGER &quot;main&quot;.&quot;log_user_update&quot;;
+CREATE TRIGGER log_user_update
+AFTER UPDATE ON User
+FOR EACH ROW
+BEGIN 
+    -- If usrName changed, log it along with Operation and TableName
+    INSERT INTO auditUserManagementLog (Operation, TableName, oldValue, newValue, ChangedAt)
+    SELECT 'UPDATE', 'User', OLD.usrName, NEW.usrName, CURRENT_TIMESTAMP
+    WHERE OLD.usrName IS NOT NEW.usrName;
+
+    -- If email changed, log it along with Operation and TableName
+    INSERT INTO auditUserManagementLog (Operation, TableName, oldValue, newValue, ChangedAt)
+    SELECT 'UPDATE', 'User', OLD.email, NEW.email, CURRENT_TIMESTAMP
+    WHERE OLD.email IS NOT NEW.email;
+END</sql><sql name="Edit Trigger log_transaction">DROP TRIGGER &quot;main&quot;.&quot;log_transaction&quot;;
+CREATE TRIGGER log_transaction
+AFTER UPDATE ON Account
+FOR EACH ROW
+BEGIN 
+    -- If user withdraws, log it along with Operation and TableName
+    INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt)
+    SELECT 'Withdraw', 'Account', OLD.accValue, NEW.accValue, CURRENT_TIMESTAMP
+    WHERE OLD.accValue &gt; NEW.accValue;
+
+    -- If user deposits, log it along with Operation and TableName
+    INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt)
+    SELECT 'Deposit', 'Account', OLD.accValue, NEW.accValue, CURRENT_TIMESTAMP
+    WHERE OLD.accValue &lt; NEW.accValue;
+END</sql><sql name="Edit Trigger log_user_update*">DROP TRIGGER &quot;main&quot;.&quot;log_user_update&quot;;
+CREATE TRIGGER log_user_update
+AFTER UPDATE ON User
+FOR EACH ROW
+BEGIN 
+    -- If usrName changed, log it along with Operation and TableName
+    INSERT INTO auditUserManagementLog (Operation, TableName, oldValue, newValue, ChangedAt)
+    SELECT 'UPDATE', 'User', OLD.usrName, NEW.usrName, CURRENT_TIMESTAMP
+    WHERE OLD.usrName IS NOT NEW.usrName;
+
+    -- If email changed, log it along with Operation and TableName
+    INSERT INTO auditUserManagementLog (Operation, TableName, oldValue, newValue, ChangedAt)
+    SELECT 'UPDATE', 'User', OLD.email, NEW.email, CURRENT_TIMESTAMP
+    WHERE OLD.email IS NOT NEW.email;
+	
+	-- If password changed, log it along with Operation and TableName
+	INSERT INTO auditUserManagementLog (Operation, TableName, oldValue, newValue, ChangedAt)
+	SELECT 'PASSWORD CHANGE', 'User', OLD.password, NEW.password, CURRENT_TIMESTAMP
+	WHERE OLD.password IS NOT NEW.password;
+END</sql><current_tab id="0"/></tab_sql></sqlb_project>

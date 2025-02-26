@@ -17,7 +17,8 @@ class Database:
 
     def create_account(self, acc_id: str, usr_id: str, acc_name: str, acc_balance: float) -> bool:
         """Creates a new account in the database."""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
 
         cursor.execute(
@@ -30,7 +31,8 @@ class Database:
 
     def create_user(self, usr_id: int, usr_name: str, email: str, password: str) -> bool:
         """Creates a new user in the database."""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
 
         cursor.execute(
@@ -43,7 +45,8 @@ class Database:
 
     def get_user_accounts(self, usr_id: str) -> list[Account]:
         """Retrieves all accounts for a given user ID."""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
 
         cursor.execute("SELECT * FROM Account WHERE accUserID=?", (usr_id,))
@@ -61,7 +64,8 @@ class Database:
 
     def get_users(self, usr_id: str) -> list[dict]:
         """Retrieves user data by user ID."""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
 
         cursor.execute("SELECT * FROM User WHERE usrID=?", (usr_id,))
@@ -81,7 +85,8 @@ class Database:
 
     def user_login(self, user_name: str, password: str) -> dict | None:
         """Authenticates a user and returns their data if successful."""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
 
         cursor.execute(
@@ -103,7 +108,8 @@ class Database:
 
     def account_id_in_use(self, random_id: str) -> bool:
         """Returns True if the account ID is in use."""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
 
         cursor.execute("SELECT * FROM Account WHERE accID=?", (random_id,))
@@ -114,7 +120,8 @@ class Database:
 
     def user_id_in_use(self, random_id: str) -> bool:
         """Returns True if the user ID is in use."""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
 
         cursor.execute("SELECT * FROM User WHERE usrID=?", (random_id,))
@@ -125,7 +132,8 @@ class Database:
 
     def withdraw_from_account(self, account_id: str, amount: float) -> list[str]:
         """Withdraws funds from an account."""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
 
         output = []
@@ -155,7 +163,8 @@ class Database:
         if amount <= 0:
             return ["Error: Deposit amount must be greater than zero"]
 
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
 
         cursor.execute("SELECT accValue FROM Account WHERE accID=?", (account_id,))
@@ -177,7 +186,8 @@ class Database:
 
     def password_reset(self, user_name: str, email: str, password: str) -> bool:
         """Resets a user's password."""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
 
         cursor.execute(
@@ -190,7 +200,8 @@ class Database:
 
     def get_user_by_username(self, username: str) -> dict | None:
         """Retrieves user data by username."""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
 
         cursor.execute("SELECT * FROM User WHERE usrName=?", (username,))
@@ -209,7 +220,8 @@ class Database:
 
     def get_user_by_email(self, email: str) -> dict | None:
         """Retrieves user by email."""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM User WHERE email=?", (email,))
         row = cursor.fetchone()
@@ -226,7 +238,8 @@ class Database:
     
     def rollback(self) -> bool:
         """Rolls Back Most recent transaction"""
-        connection = sqlite3.connect(self.name, check_same_thread=False)
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
         cursor = connection.cursor()
         cursor.execute("ROLLBACK;")
         connection.close()

@@ -155,6 +155,14 @@ class UserManager:
 
         if not input_validator.validate_password_complexity(new_password):
             return "Password not secure."
+        
+        # Check if user exists
+        user_data = db_manager.get_user_by_username(username)
+        if not user_data:
+            return "User does not exist."
+
+        if user_data['email'] != email:
+            return "Email does not match our records."
 
         hashed_password = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
         try:
@@ -163,8 +171,7 @@ class UserManager:
                 return "Password reset successfully."
             return "Password reset failed."
         except sqlite3.Error as e:
-            logging.error("Database error: %s", e)
-            return "Error resetting password."
+            return f"Database error: {e}"
 
     def get_database(self):
         return db_manager

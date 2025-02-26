@@ -14,7 +14,7 @@ class Withdrawal:
         Initializes the Withdrawal object.
 
         Args:
-            to_id (str): The ID of the account to withdraw funds from.
+            from_id (str): The ID of the account to withdraw funds from.
             withdrawal_amount (float): The amount withdraw.
             database: The database handler for account operations.
         """
