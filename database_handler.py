@@ -143,10 +143,8 @@ class Database:
             output.append("Error: Insufficient Funds")
         else:
             new_value = value - amount
-            cursor.execute(
-                "UPDATE Account SET accValue=? WHERE accID=?",
-                (new_value, account_id)
-            )
+            cursor.execute("BEGIN TRANSACTION;")
+            cursor.execute("UPDATE Account SET accValue=? WHERE accID=?",(new_value, account_id))
             connection.commit()
 
         connection.close()
@@ -170,10 +168,8 @@ class Database:
             return ["Error: Depositing Account not found"]
 
         new_value = value + amount
-        cursor.execute(
-            "UPDATE Account SET accValue=? WHERE accID=?",
-            (new_value, account_id)
-        )
+        cursor.execute("BEGIN TRANSACTION;") 
+        cursor.execute("UPDATE Account SET accValue=? WHERE accID=?", (new_value, account_id))
         connection.commit()
 
         connection.close()
@@ -227,3 +223,14 @@ class Database:
                 "password": row[3]
             }
         return None
+    
+    def rollback(self) -> bool:
+        """Rolls Back Most recent transaction"""
+        connection = sqlite3.connect(self.name, check_same_thread=False)
+        cursor = connection.cursor()
+        cursor.execute("ROLLBACK;")
+        connection.close()
+
+
+
+    

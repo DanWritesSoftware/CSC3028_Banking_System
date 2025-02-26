@@ -10,6 +10,8 @@ from flask_session import Session
 from user_management import UserManager
 from session_manager import SessionManager
 from transfer_handler import Transfer
+from deposit_handler import Deposit
+from withdrawal_handler import Withdrawal
 from input_validator import InputValidator
 import random # for account number generation
 
@@ -128,6 +130,7 @@ def signup():
         flash(result, 'error')
     return render_template('register.html')
 @app.route('/password-reset', methods=['GET', 'POST'])
+
 def password_reset():
     # Handle user not logged in
     if 'user_id' not in session:
@@ -175,6 +178,40 @@ def transfer():
         else:
             flash('Transfer Success!')
             return redirect('/home')
+        
+@app.route('/deposit', methods=['GET','POST'])
+def deposit():
+    if request.method == 'GET':
+        return render_template('deposit.html')
+
+    accountID = request.form['accountId']
+    depositAmount = request.form['depositAmount']
+    d = Deposit(accountID, float(depositAmount), user_manager.get_database())
+    errors = d.try_deposit()
+    if errors:
+        for error in errors:
+            flash(error, 'error')
+        return redirect('/deposit')
+    else:
+        flash('Deposit Success!')
+        return redirect('/home')
+    
+@app.route('/withdraw', methods=['GET','POST'])
+def withdraw():
+    if request.method == 'GET':
+        return render_template('withdrawal.html')
+
+    accountID = request.form['accountId']
+    withdrawAmount = request.form['withdrawAmount']
+    w = Withdrawal(accountID, float(withdrawAmount), user_manager.get_database())
+    errors = w.try_withdrawal()
+    if errors:
+        for error in errors:
+            flash(error, 'error')
+        return redirect('/withdraw')
+    else:
+        flash('Withdrawal Success!')
+        return redirect('/home')
 
 @app.route('/new', methods = ['POST', 'GET'])
 def new():

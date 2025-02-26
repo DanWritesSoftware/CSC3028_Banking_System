@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Withdraw Money</title>
+</head>
+<link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
+<body>
+
+<a href="/home">back</a>
+
+<!-- Display flash messages here -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashed-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+<form action="/withdraw" method = "POST">
+    <p class = "a">Withdraw From</p>
+    <p><input type = "number" name = "accountId" placeholder="Account Number" autocomplete="off"/></p>
+
+    <p class = "a">Amount</p>
+    <p><input type = "number" name = "withdrawAmount" placeholder="Withdrawal Amount" autocomplete="off" step="0.01" min="0"/></p>
+
+    <p><input type = "submit" class = "smallButtonClass" value = "Submit" /></p>
+</form>
+
+</body>
+</html>
