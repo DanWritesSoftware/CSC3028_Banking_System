@@ -11,6 +11,7 @@ import smtplib
 import socket
 from email.message import EmailMessage
 from typing import Optional, Dict
+from Account import Account
 
 import bcrypt
 from database_handler import Database
@@ -177,4 +178,17 @@ class UserManager:
 
     def get_database(self):
         return db_manager
+
+    def get_user_account_info_from_index(self, user_id: str, index: int) -> Account:
+        user_accounts = db_manager.get_user_accounts(user_id)
+        try:
+            output = user_accounts[index]
+        except IndexError:
+            print(f"Error: Index {index} is out of bounds for user {user_id}")
+        except Exception as e:
+            # This handles any other unexpected exceptions
+            print(f"Unexpected error: {e}")
+
+        return output
+
 

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Account Details</title>
+</head>
+<a href="/home">back</a>
+
+<link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
+
+<!-- Display flash messages here -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashed-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        <h4>{{ message }}</h4>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+<h1>Account Name: {{ account_name }}</h1>
+<h1>Account Number: {{ account_number }}</h1>
+<h1>Value: ${{ account_value }}</h1>
+
+<body>
+
+</body>
+</html>

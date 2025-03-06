@@ -4,12 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a8fef416-1158-40db-848a-58aefe3529ac" name="Changes" comment="Milestone 1&#10;&#10;Working email 2fa.&#10;Working homepage with user's accounts.&#10;Working Session Management.&#10;Working Login/Logout.&#10;Working Reset Password.&#10;Working account creation/transfer.&#10;Additional style changes.">
+    <list default="true" id="a8fef416-1158-40db-848a-58aefe3529ac" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/templates/account_details.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BankingDatabase.db" beforeDir="false" afterPath="$PROJECT_DIR$/BankingDatabase.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/database_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/database_handler.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flask_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/flask_main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flask_session/2029240f6d1128be89ddc32729463129" beforeDir="false" afterPath="$PROJECT_DIR$/flask_session/2029240f6d1128be89ddc32729463129" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/home.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/user_management.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_management.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -20,8 +21,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="HTML File" />
         <option value="Python Script" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
@@ -44,16 +45,17 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
-    &quot;Python tests.Python tests in input_validator_test.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python.email_test.executor&quot;: &quot;Run&quot;,
-    &quot;Python.flaskMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.flask_main.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "Python tests.Python tests in input_validator_test.py.executor": "Run",
+    "Python.email_test.executor": "Run",
+    "Python.flaskMain.executor": "Run",
+    "Python.flask_main.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "C:/Users/homes/Documents/Projects/PumpLab"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Python.flask_main">
     <configuration name="email_test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="CSC3028 Banking System" />
@@ -226,7 +228,15 @@
       <option name="project" value="LOCAL" />
       <updated>1740096958773</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Cleared User Tables&#10;Cleared Account Tables&#10;Added email in use verification">
+      <option name="closed" value="true" />
+      <created>1741221029045</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1741221029045</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -271,6 +281,7 @@
     <MESSAGE value="Added transfer route and html page.&#10;Need to complete class and post code to route." />
     <MESSAGE value="Added user ID generation, changed redirects." />
     <MESSAGE value="Milestone 1&#10;&#10;Working email 2fa.&#10;Working homepage with user's accounts.&#10;Working Session Management.&#10;Working Login/Logout.&#10;Working Reset Password.&#10;Working account creation/transfer.&#10;Additional style changes." />
-    <option name="LAST_COMMIT_MESSAGE" value="Milestone 1&#10;&#10;Working email 2fa.&#10;Working homepage with user's accounts.&#10;Working Session Management.&#10;Working Login/Logout.&#10;Working Reset Password.&#10;Working account creation/transfer.&#10;Additional style changes." />
+    <MESSAGE value="Cleared User Tables&#10;Cleared Account Tables&#10;Added email in use verification" />
+    <option name="LAST_COMMIT_MESSAGE" value="Cleared User Tables&#10;Cleared Account Tables&#10;Added email in use verification" />
   </component>
 </project>

@@ -37,9 +37,9 @@
 <body>
     <div class="grid-container">
         {% for account in account_list %}
-        <div class="grid-item">
-            <a class="buttonClass"><h1>{{ account.type }}</h1><body>${{ account.balance }}</body></a>
-        </div>
+            <div class="grid-item">
+                <a class="buttonClass" href="/account/{{ loop.index - 1 }}"><h1>{{ account.type }}</h1><body>${{ account.balance }}</body></a>
+            </div>
         {% endfor %}
     </div>
 </body>

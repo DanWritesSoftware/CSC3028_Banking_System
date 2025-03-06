@@ -266,5 +266,27 @@ def new():
         user_manager.get_database().create_account(str(random_account),session.get('user_id'), account_name, float(account_value))
         return redirect('/home')
 
+@app.route('/account/<account_index>')
+def account_details(account_index):
+    # Handle user not logged in
+    if 'user_id' not in session:
+        flash('You must be logged in to view this page', 'error')
+        return redirect('/login')
+
+    # display account information
+    try:
+        user_id = session.get('user_id')
+        account_info = user_manager.get_user_account_info_from_index(user_id,int(account_index))
+    except IndexError:
+        flash('It looks like your lost. Try returning to the home page.', 'error')
+        return render_template('error.html')
+    except Exception as e:
+        flash(f'An unexpected error occurred: {str(e)}', 'error')
+        return render_template('error.html')
+    account_number = account_info.accountNumber
+    account_name = account_info.type
+    account_value = account_info.balance
+    return render_template('account_details.html', account_number = account_number, account_name = account_name, account_value = account_value)
+
 if __name__ == '__main__':
     app.run(debug=True)
