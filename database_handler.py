@@ -118,6 +118,18 @@ class Database:
         connection.close()
         return bool(rows)
 
+    def email_in_use(self, email_address: str) -> bool:
+        """Returns True if the email address is in use."""
+        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT * FROM User WHERE email=?", (email_address,))
+        rows = cursor.fetchall()
+
+        connection.close()
+        return bool(rows)
+
     def user_id_in_use(self, random_id: str) -> bool:
         """Returns True if the user ID is in use."""
         connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)

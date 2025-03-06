@@ -97,7 +97,7 @@ def dashboard():
             # Account Error
             validation_errors.append(f"ERROR READING DATA - Account number {account.accountNumber} is invalid.")
 
-        if valid.validate_currency_amount(account.balance) == False:
+        #if valid.validate_currency_amount(account.balance) == False:
             # Balance Error
             validation_errors.append(f"ERROR READING DATA - Balance for account {account.accountNumber} is invalid.")
 

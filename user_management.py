@@ -65,6 +65,8 @@ class UserManager:
             return "Password not complex enough, please try again."
         if password != confirm_password:
             return "Passwords do not match."
+        if db_manager.email_in_use(email):
+            return "Email address already in use!"
 
         while True:
             user_id = ''.join(random.choices('0123456789', k=USER_ID_LENGTH))
