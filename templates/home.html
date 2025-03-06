@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
     <title>Home</title>
 </head>
 
@@ -11,7 +12,6 @@
     <h1>Evil Banking System</h1>
     <h4>Welcome, {{ username }}</h4>
     <div class="headerGrid">
-        <div><a href="/login">Login</a></div>
         <div><a href="/logout">Logout</a></div>
         <div><a href="/password-reset">Reset Password</a></div>
         <div><a href="/new">New Bank Account</a></div>
