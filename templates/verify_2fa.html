@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <title>2FA Verification</title>
+</head>
+
+<link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
+
+
+<body>
+    <h1>Two-Factor Authentication</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <form method="POST">
+        <p>Enter the 6-digit code sent to your email:</p>
+        <input type="text" name="code" placeholder="Verification Code" required>
+        <button type="submit" class="smallButtonClass">Verify</button>
+    </form>
+    <p>Didn't receive the code? <a href="/login">Try again</a></p>
+</body>
+</html>

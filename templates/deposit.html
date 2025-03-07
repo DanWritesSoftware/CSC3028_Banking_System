@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
-    <title>Create Account</title>
+    <title>Deposit Money</title>
 </head>
-
 <link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
-
-
 <body>
 
 <a href="/home">back</a>
@@ -26,10 +23,12 @@
         {% endif %}
     {% endwith %}
 
-<form action="/new" method = "POST">
-    <p><input type = "text" name = "accountName" placeholder="Account Name" autocomplete="off"/></p>
+<form action="/deposit" method = "POST">
+    <p class = "a">Deposit To</p>
+    <p><input type = "number" name = "accountId" placeholder="Account Number" autocomplete="off"/></p>
 
-    <p><input type = "number" name = "value" placeholder="Initial Deposit Amount" autocomplete="off" step="0.01" min="0"/></p>
+    <p class = "a">Amount</p>
+    <p><input type = "number" name = "depositAmount" placeholder="Deposit Amount" autocomplete="off" step="0.01" min="0"/></p>
 
     <p><input type = "submit" class = "smallButtonClass" value = "Submit" /></p>
 </form>

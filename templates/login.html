@@ -2,11 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
     <title>Login</title>
 </head>
+<link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
+
 <body>
 
     <a href="/home">back</a>
+    <br>
+        <div><a href="/register">Don't have an account yet? Register here.</a></div>
+
     
     <!-- Display flash messages here -->
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -20,14 +26,22 @@
                 </div>
             {% endif %}
         {% endwith %}
+
+       <!-- Two factor authentication notice -->
+        {% if session.get('2fa_email') %}
+            <div class="2fa-notice">
+                <p>A verification code has been sent to {{ session['2fa_email'] }}</p>
+            </div>
+        {% endif %}
     
-    <form action="/new" method = "POST">
-        <p><input type = "text" username = "username:" placeholder="username" autocomplete="off"/></p>
+    <form action="/login" method = "POST">
+        <p><input type = "text" name = "username" placeholder="username" autocomplete="off"/></p>
     
-        <p><input type = "text" name = "password:" placeholder="password" autocomplete="off" step="0.01" min="0"/></p>
+        <p><input type = "text" name = "password" placeholder="password" autocomplete="off" step="0.01" min="0"/></p>
     
         <p><input type = "submit" class = "smallButtonClass" value = "Submit" /></p>
     </form>
-    
+
+
     </body>
 </html>

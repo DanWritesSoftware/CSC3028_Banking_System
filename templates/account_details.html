@@ -3,15 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
-    <title>Create Account</title>
+    <title>Account Details</title>
 </head>
+<a href="/home">back</a>
 
 <link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
-
-
-<body>
-
-<a href="/home">back</a>
 
 <!-- Display flash messages here -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -19,20 +15,18 @@
             <div class="flashed-messages">
                 {% for category, message in messages %}
                     <div class="flash-message {{ category }}">
-                        {{ message }}
+                        <h4>{{ message }}</h4>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
     {% endwith %}
 
-<form action="/new" method = "POST">
-    <p><input type = "text" name = "accountName" placeholder="Account Name" autocomplete="off"/></p>
+<h1>Account Name: {{ account_name }}</h1>
+<h1>Account Number: {{ account_number }}</h1>
+<h1>Value: ${{ account_value }}</h1>
 
-    <p><input type = "number" name = "value" placeholder="Initial Deposit Amount" autocomplete="off" step="0.01" min="0"/></p>
-
-    <p><input type = "submit" class = "smallButtonClass" value = "Submit" /></p>
-</form>
+<body>
 
 </body>
 </html>
