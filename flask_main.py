@@ -15,11 +15,26 @@ from withdrawal_handler import Withdrawal
 from input_validator import InputValidator
 import random # for account number generation
 
+# Ensure logs directory exists
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+LOG_FILE = os.path.join(LOG_DIR, "banking_system.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8'),
+        logging.StreamHandler()
+    ],
+    force=True  # Ensures old handlers don’t interfere
+)
 
 # Initialize Flask app
 app = Flask(__name__)
+logging.info("Logging system initialized.")
 
 # Flask-Session configuration
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -29,6 +44,15 @@ Session(app)
 # Initialize session manager and user manager
 session_manager = SessionManager()
 user_manager = UserManager()
+
+@app.before_request
+def log_request_info():
+    logging.info(f"Incoming request: {request.method} {request.url} from {request.remote_addr}")
+
+@app.after_request
+def log_response_info(response):
+    logging.info(f"Response status: {response.status_code} for {request.method} {request.url}")
+    return response
 
 @app.route('/')
 def default():
@@ -46,8 +70,11 @@ def login():
         if result and result.get('requires_2fa'):
             session['2fa_email'] = result['email']
             return redirect('/verify-2fa')
-
-        flash('Invalid credentials' if result is None else '2FA required', 'error')
+        if result:
+            logging.info(f"Successful login attempt for user: {username}")
+        else:
+            logging.warning(f"Failed login attempt for user: {username} from {request.remote_addr}")
+            flash('Invalid credentials' if result is None else '2FA required', 'error')
     return render_template('login.html')
 
 @app.route('/verify-2fa', methods=['GET', 'POST'])
@@ -75,7 +102,7 @@ def verify_2fa():
 def logout():
     """Clear session and logout user."""
     session.clear()
-    logging.info("User logged out.")
+    logging.info(f"User {session['username']} logged out.")
     return redirect('/')
 
 @app.route('/home')
@@ -174,8 +201,10 @@ def transfer():
         if errors:
             for error in errors:
                 flash(error, 'error')
+                logging.warning(f"Failed transfer attempt by {session['username']} from {fromAccountID} to {toAccountID}: {error}")
             return redirect('/transfer')
         else:
+            logging.info(f"User {session['username']} transferred {transferAmount} from {fromAccountID} to {toAccountID}.")
             flash('Transfer Success!')
             return redirect('/home')
         
@@ -289,4 +318,4 @@ def account_details(account_index):
     return render_template('account_details.html', account_number = account_number, account_name = account_name, account_value = account_value)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False) # Changed to false, for the log to show output
