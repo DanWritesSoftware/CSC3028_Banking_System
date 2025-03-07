@@ -6,17 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="a8fef416-1158-40db-848a-58aefe3529ac" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/account_details.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/account_details.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/deposit.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/deposit.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/error.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/error.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/home.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/login.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/newAccount.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/newAccount.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/passwordReset.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/passwordReset.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/register.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/register.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/transfer.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/transfer.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/verify_2fa.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/verify_2fa.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/withdrawal.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/withdrawal.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,17 +39,17 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
-    &quot;Python tests.Python tests in input_validator_test.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python.email_test.executor&quot;: &quot;Run&quot;,
-    &quot;Python.flaskMain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.flask_main.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/homes/Documents/Projects/PumpLab&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "Python tests.Python tests in input_validator_test.py.executor": "Run",
+    "Python.email_test.executor": "Run",
+    "Python.flaskMain.executor": "Run",
+    "Python.flask_main.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "C:/Users/homes/Documents/GitHub/CSC3028_Banking_System"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Python.flask_main">
     <configuration name="email_test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="CSC3028 Banking System" />
