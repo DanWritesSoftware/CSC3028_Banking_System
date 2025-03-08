@@ -1,0 +1,147 @@
+2025-03-07 16:26:30,197 - INFO - Logging system initialized.
+2025-03-07 16:26:30,290 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-03-07 16:26:30,290 - INFO - [33mPress CTRL+C to quit[0m
+2025-03-07 16:26:48,693 - INFO - Incoming request: GET http://127.0.0.1:5000/ from 127.0.0.1
+2025-03-07 16:26:48,694 - INFO - Response status: 302 for GET http://127.0.0.1:5000/
+2025-03-07 16:26:48,695 - INFO - 127.0.0.1 - - [07/Mar/2025 16:26:48] "[32mGET / HTTP/1.1[0m" 302 -
+2025-03-07 16:26:48,731 - INFO - Incoming request: GET http://127.0.0.1:5000/home from 127.0.0.1
+2025-03-07 16:26:48,732 - INFO - Response status: 302 for GET http://127.0.0.1:5000/home
+2025-03-07 16:26:48,741 - INFO - 127.0.0.1 - - [07/Mar/2025 16:26:48] "[32mGET /home HTTP/1.1[0m" 302 -
+2025-03-07 16:26:48,757 - INFO - Incoming request: GET http://127.0.0.1:5000/login from 127.0.0.1
+2025-03-07 16:26:48,764 - INFO - Response status: 200 for GET http://127.0.0.1:5000/login
+2025-03-07 16:26:48,769 - INFO - 127.0.0.1 - - [07/Mar/2025 16:26:48] "GET /login HTTP/1.1" 200 -
+2025-03-07 16:26:48,779 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:26:48,835 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:26:48,836 - INFO - 127.0.0.1 - - [07/Mar/2025 16:26:48] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:26:54,278 - INFO - Incoming request: POST http://127.0.0.1:5000/login from 127.0.0.1
+2025-03-07 16:26:54,281 - WARNING - Login failed: User not found.
+2025-03-07 16:26:54,282 - WARNING - Failed login attempt for user: rr from 127.0.0.1
+2025-03-07 16:26:54,283 - INFO - Response status: 200 for POST http://127.0.0.1:5000/login
+2025-03-07 16:26:54,284 - INFO - 127.0.0.1 - - [07/Mar/2025 16:26:54] "POST /login HTTP/1.1" 200 -
+2025-03-07 16:26:54,295 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:26:54,298 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:26:54,299 - INFO - 127.0.0.1 - - [07/Mar/2025 16:26:54] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:34:54,636 - WARNING - Login failed: User not found.
+2025-03-07 16:34:54,637 - WARNING - Failed login attempt for user: fdf from 127.0.0.1
+2025-03-07 16:35:10,624 - WARNING - Login failed: User not found.
+2025-03-07 16:35:10,624 - WARNING - Failed login attempt for user: sdfcs from 127.0.0.1
+2025-03-07 16:42:12,714 - INFO - Logging system initialized.
+2025-03-07 16:42:12,822 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-03-07 16:42:12,823 - INFO - [33mPress CTRL+C to quit[0m
+2025-03-07 16:42:18,330 - INFO - Incoming request: GET http://127.0.0.1:5000/ from 127.0.0.1
+2025-03-07 16:42:18,330 - INFO - Response status: 302 for GET http://127.0.0.1:5000/
+2025-03-07 16:42:18,331 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:18] "[32mGET / HTTP/1.1[0m" 302 -
+2025-03-07 16:42:18,378 - INFO - Incoming request: GET http://127.0.0.1:5000/home from 127.0.0.1
+2025-03-07 16:42:18,382 - INFO - Response status: 302 for GET http://127.0.0.1:5000/home
+2025-03-07 16:42:18,399 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:18] "[32mGET /home HTTP/1.1[0m" 302 -
+2025-03-07 16:42:18,413 - INFO - Incoming request: GET http://127.0.0.1:5000/login from 127.0.0.1
+2025-03-07 16:42:18,423 - INFO - Response status: 200 for GET http://127.0.0.1:5000/login
+2025-03-07 16:42:18,427 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:18] "GET /login HTTP/1.1" 200 -
+2025-03-07 16:42:18,440 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:42:18,507 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:42:18,508 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:18] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:42:21,262 - INFO - Incoming request: POST http://127.0.0.1:5000/login from 127.0.0.1
+2025-03-07 16:42:21,263 - WARNING - Login failed: User not found.
+2025-03-07 16:42:21,263 - WARNING - Failed login attempt for user: df from 127.0.0.1
+2025-03-07 16:42:21,264 - INFO - Response status: 200 for POST http://127.0.0.1:5000/login
+2025-03-07 16:42:21,265 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:21] "POST /login HTTP/1.1" 200 -
+2025-03-07 16:42:21,272 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:42:21,273 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:42:21,274 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:21] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:42:29,025 - INFO - Incoming request: POST http://127.0.0.1:5000/login from 127.0.0.1
+2025-03-07 16:42:29,027 - WARNING - Login failed: User not found.
+2025-03-07 16:42:29,027 - WARNING - Failed login attempt for user: fs from 127.0.0.1
+2025-03-07 16:42:29,028 - INFO - Response status: 200 for POST http://127.0.0.1:5000/login
+2025-03-07 16:42:29,029 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:29] "POST /login HTTP/1.1" 200 -
+2025-03-07 16:42:29,038 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:42:29,039 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:42:29,040 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:29] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:42:49,929 - INFO - Incoming request: POST http://127.0.0.1:5000/login from 127.0.0.1
+2025-03-07 16:42:49,932 - WARNING - Login failed: User not found.
+2025-03-07 16:42:49,933 - WARNING - Failed login attempt for user: fddf from 127.0.0.1
+2025-03-07 16:42:49,934 - INFO - Response status: 200 for POST http://127.0.0.1:5000/login
+2025-03-07 16:42:49,935 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:49] "POST /login HTTP/1.1" 200 -
+2025-03-07 16:42:49,947 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:42:49,948 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:42:49,949 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:49] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:42:59,139 - INFO - Incoming request: POST http://127.0.0.1:5000/login from 127.0.0.1
+2025-03-07 16:42:59,140 - WARNING - Login failed: User not found.
+2025-03-07 16:42:59,140 - WARNING - Failed login attempt for user: ssffs from 127.0.0.1
+2025-03-07 16:42:59,141 - INFO - Response status: 200 for POST http://127.0.0.1:5000/login
+2025-03-07 16:42:59,141 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:59] "POST /login HTTP/1.1" 200 -
+2025-03-07 16:42:59,150 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:42:59,151 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:42:59,152 - INFO - 127.0.0.1 - - [07/Mar/2025 16:42:59] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:43:06,163 - INFO - Incoming request: POST http://127.0.0.1:5000/login from 127.0.0.1
+2025-03-07 16:43:06,165 - WARNING - Login failed: User not found.
+2025-03-07 16:43:06,165 - WARNING - Failed login attempt for user: sf from 127.0.0.1
+2025-03-07 16:43:06,166 - INFO - Response status: 200 for POST http://127.0.0.1:5000/login
+2025-03-07 16:43:06,167 - INFO - 127.0.0.1 - - [07/Mar/2025 16:43:06] "POST /login HTTP/1.1" 200 -
+2025-03-07 16:43:06,178 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:43:06,180 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:43:06,181 - INFO - 127.0.0.1 - - [07/Mar/2025 16:43:06] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:50:50,851 - INFO - Logging system initialized.
+2025-03-07 16:50:51,035 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-03-07 16:50:51,037 - INFO - [33mPress CTRL+C to quit[0m
+2025-03-07 16:50:53,030 - INFO - Incoming request: GET http://127.0.0.1:5000/ from 127.0.0.1
+2025-03-07 16:50:53,031 - INFO - Response status: 302 for GET http://127.0.0.1:5000/
+2025-03-07 16:50:53,032 - INFO - 127.0.0.1 - - [07/Mar/2025 16:50:53] "[32mGET / HTTP/1.1[0m" 302 -
+2025-03-07 16:50:53,079 - INFO - Incoming request: GET http://127.0.0.1:5000/home from 127.0.0.1
+2025-03-07 16:50:53,080 - INFO - Response status: 302 for GET http://127.0.0.1:5000/home
+2025-03-07 16:50:53,094 - INFO - 127.0.0.1 - - [07/Mar/2025 16:50:53] "[32mGET /home HTTP/1.1[0m" 302 -
+2025-03-07 16:50:53,109 - INFO - Incoming request: GET http://127.0.0.1:5000/login from 127.0.0.1
+2025-03-07 16:50:53,116 - INFO - Response status: 200 for GET http://127.0.0.1:5000/login
+2025-03-07 16:50:53,121 - INFO - 127.0.0.1 - - [07/Mar/2025 16:50:53] "GET /login HTTP/1.1" 200 -
+2025-03-07 16:50:53,132 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:50:53,200 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:50:53,200 - INFO - 127.0.0.1 - - [07/Mar/2025 16:50:53] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:50:56,351 - INFO - Incoming request: GET http://127.0.0.1:5000/register from 127.0.0.1
+2025-03-07 16:50:56,355 - INFO - Response status: 200 for GET http://127.0.0.1:5000/register
+2025-03-07 16:50:56,356 - INFO - 127.0.0.1 - - [07/Mar/2025 16:50:56] "GET /register HTTP/1.1" 200 -
+2025-03-07 16:50:56,364 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:50:56,367 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:50:56,367 - INFO - 127.0.0.1 - - [07/Mar/2025 16:50:56] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:51:20,641 - INFO - Incoming request: POST http://127.0.0.1:5000/register from 127.0.0.1
+2025-03-07 16:51:20,645 - WARNING - Password does not meet complexity requirements.
+2025-03-07 16:51:20,646 - INFO - Response status: 200 for POST http://127.0.0.1:5000/register
+2025-03-07 16:51:20,648 - INFO - 127.0.0.1 - - [07/Mar/2025 16:51:20] "POST /register HTTP/1.1" 200 -
+2025-03-07 16:51:20,665 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:51:20,668 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:51:20,669 - INFO - 127.0.0.1 - - [07/Mar/2025 16:51:20] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:51:51,079 - INFO - Incoming request: POST http://127.0.0.1:5000/register from 127.0.0.1
+2025-03-07 16:51:51,080 - WARNING - Password does not meet complexity requirements.
+2025-03-07 16:51:51,081 - INFO - Response status: 200 for POST http://127.0.0.1:5000/register
+2025-03-07 16:51:51,082 - INFO - 127.0.0.1 - - [07/Mar/2025 16:51:51] "POST /register HTTP/1.1" 200 -
+2025-03-07 16:51:51,093 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:51:51,094 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:51:51,095 - INFO - 127.0.0.1 - - [07/Mar/2025 16:51:51] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:53:06,935 - INFO - Incoming request: POST http://127.0.0.1:5000/register from 127.0.0.1
+2025-03-07 16:53:07,343 - INFO - User talisa registered successfully.
+2025-03-07 16:53:07,344 - INFO - Response status: 302 for POST http://127.0.0.1:5000/register
+2025-03-07 16:53:07,355 - INFO - 127.0.0.1 - - [07/Mar/2025 16:53:07] "[32mPOST /register HTTP/1.1[0m" 302 -
+2025-03-07 16:53:07,372 - INFO - Incoming request: GET http://127.0.0.1:5000/login from 127.0.0.1
+2025-03-07 16:53:07,373 - INFO - Response status: 200 for GET http://127.0.0.1:5000/login
+2025-03-07 16:53:07,378 - INFO - 127.0.0.1 - - [07/Mar/2025 16:53:07] "GET /login HTTP/1.1" 200 -
+2025-03-07 16:53:07,387 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:53:07,388 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:53:07,389 - INFO - 127.0.0.1 - - [07/Mar/2025 16:53:07] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:53:28,238 - INFO - Incoming request: POST http://127.0.0.1:5000/login from 127.0.0.1
+2025-03-07 16:53:30,914 - INFO - Verification email sent to talisa.fisher@yahoo.com
+2025-03-07 16:53:30,914 - INFO - Response status: 302 for POST http://127.0.0.1:5000/login
+2025-03-07 16:53:30,922 - INFO - 127.0.0.1 - - [07/Mar/2025 16:53:30] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-03-07 16:53:30,937 - INFO - Incoming request: GET http://127.0.0.1:5000/verify-2fa from 127.0.0.1
+2025-03-07 16:53:30,977 - INFO - Response status: 200 for GET http://127.0.0.1:5000/verify-2fa
+2025-03-07 16:53:30,983 - INFO - 127.0.0.1 - - [07/Mar/2025 16:53:30] "GET /verify-2fa HTTP/1.1" 200 -
+2025-03-07 16:53:30,998 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:53:30,999 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:53:31,005 - INFO - 127.0.0.1 - - [07/Mar/2025 16:53:31] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-03-07 16:53:46,768 - INFO - Incoming request: POST http://127.0.0.1:5000/verify-2fa from 127.0.0.1
+2025-03-07 16:53:46,769 - WARNING - Invalid code for talisa.fisher@yahoo.com
+2025-03-07 16:53:46,769 - INFO - Response status: 200 for POST http://127.0.0.1:5000/verify-2fa
+2025-03-07 16:53:46,771 - INFO - 127.0.0.1 - - [07/Mar/2025 16:53:46] "POST /verify-2fa HTTP/1.1" 200 -
+2025-03-07 16:53:46,789 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
+2025-03-07 16:53:46,790 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
+2025-03-07 16:53:46,793 - INFO - 127.0.0.1 - - [07/Mar/2025 16:53:46] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
