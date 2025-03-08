@@ -45,6 +45,9 @@ Session(app)
 session_manager = SessionManager()
 user_manager = UserManager()
 
+# To hold failed login attempts
+failed_login_attempts = {}
+
 @app.before_request
 def log_request_info():
     logging.info(f"Incoming request: {request.method} {request.url} from {request.remote_addr}")
@@ -72,9 +75,14 @@ def login():
             return redirect('/verify-2fa')
         if result:
             logging.info(f"Successful login attempt for user: {username}")
+            failed_login_attempts.pop(username, None)
         else:
             logging.warning(f"Failed login attempt for user: {username} from {request.remote_addr}")
+            failed_login_attempts[username] = failed_login_attempts.get(username, 0) + 1
             flash('Invalid credentials' if result is None else '2FA required', 'error')
+
+            if failed_login_attempts[username] >= 3:
+                logging.error(f"SECURITY INCIDENT: More than three failed login attempts for user: {username} from {request.remote_addr}")
     return render_template('login.html')
 
 @app.route('/verify-2fa', methods=['GET', 'POST'])
