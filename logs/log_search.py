@@ -5,24 +5,29 @@ from datetime import datetime
 def search_logs(log_file, keyword=None, log_level=None, start_date=None, end_date=None):
     """
     Search logs based on keyword, log level, and date range.
-    
-    :param log_file: Path to the log file.
-    :param keyword: Keyword to filter logs.
-    :param log_level: Log level (INFO, WARNING, ERROR, etc.).
-    :param start_date: Start date (YYYY-MM-DD HH:MM:SS).
-    :param end_date: End date (YYYY-MM-DD HH:MM:SS).
-    :return: List of matching log entries.
+    # Example usage:
+    # #Search different keywords
+    # python log_search.py banking_system.log "User not found" NONE NONE NONE
+    # #Filter by log level
+    # python log_search.py banking_system.log NONE WARNING NONE NONE
+    # #Search by date range
+    # python log_search.py banking_system.log NONE NONE "2025-03-07 16:42:00" "2025-03-07 16:50:00"
     """
     results = []
     
-    with open(log_file, 'r', encoding='utf-8') as file:
-        for line in file:
-            match = re.match(r'^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2},\\d{3}) - (\\w+) - (.*)$', line)
-            
-            if match:
+    try:
+        with open(log_file, 'r', encoding='utf-8') as file:
+            logs = file.readlines()
+            print(f"Total logs found: {len(logs)}")
+
+            for line in logs:
+                match = re.match(r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - (\w+) - (.*)$', line)
+                if not match:
+                    continue
+
                 log_time, level, message = match.groups()
                 log_time = datetime.strptime(log_time, "%Y-%m-%d %H:%M:%S,%f")
-                
+
                 if log_level and log_level.upper() != "NONE" and level != log_level:
                     continue
                 
@@ -40,6 +45,8 @@ def search_logs(log_file, keyword=None, log_level=None, start_date=None, end_dat
                         continue
                 
                 results.append(line.strip())
+    except Exception as e:
+        print(f"Error reading log file: {e}")
     
     return results
 
@@ -56,5 +63,10 @@ if __name__ == "__main__":
 
     results = search_logs(log_file, keyword, log_level, start_date, end_date)
 
-    for result in results:
-        print(result)
+    if results:
+        print("\n".join(results))
+        with open("search_results.txt", "w", encoding="utf-8") as output_file:
+            for result in results:
+                output_file.write(result + "\n")
+    else:
+        print("No matching logs found.")
