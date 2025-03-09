@@ -3,9 +3,11 @@ transfer_handler.py
 This module defines the Transfer class, which handles transferring funds between accounts.
 """
 
+from input_validator import InputValidator
+
 class Transfer:
     """
-    Handles transferring funds between accounts.
+    Handles transferring funds between accounts with input validation.
     Manages the transfer process and returns any errors encountered.
     """
 
@@ -24,26 +26,30 @@ class Transfer:
         self.transfer_amount = transfer_amount
         self.database = database
 
-    def try_transfer(self):
+    def try_transfer(self) -> list[str]:
         """
-        Attempts to transfer funds between accounts.
+        Attempt transfer after validating inputs.
         Returns a list of error messages if the transfer fails.
         """
-        output = []
-        withdraw_errors = []
-        deposit_errors = []
+        errors = []
 
+        # Validate account numbers
+        if not InputValidator.validate_account_number(self.from_id):
+            errors.append("Invalid source account number")
+        if not InputValidator.validate_account_number(self.to_id):
+            errors.append("Invalid destination account number")
+
+        # Validate transfer amount
+        if not InputValidator.validate_currency_amount(self.transfer_amount):
+            errors.append("Invalid transfer amount (must be positive with ≤ 2 decimals)")
+
+        if errors:
+            return errors
+
+        # Proceed with database operations
         withdraw_errors = self.database.withdraw_from_account(self.from_id, self.transfer_amount)
+        if withdraw_errors:
+            return withdraw_errors
 
-        if not withdraw_errors:
-            deposit_errors = self.database.deposit_to_account(self.to_id, self.transfer_amount)
-
-        if not withdraw_errors and not deposit_errors:
-            return []
-        else:
-            for error in withdraw_errors:
-                output.append(error)
-            for error in deposit_errors:
-                output.append(error)
-
-        return output
+        deposit_errors = self.database.deposit_to_account(self.to_id, self.transfer_amount)
+        return deposit_errors
