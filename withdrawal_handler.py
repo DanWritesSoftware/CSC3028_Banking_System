@@ -1,11 +1,13 @@
 """
 withdrawal_handler.py
-This module defines the Withdrawal class, which handles taking funds from an account.
+This module defines the Withdrawal class, which handles withdrawing funds from an account.
 """
+
+from input_validator import InputValidator
 
 class Withdrawal:
     """
-    Handles Withdrawing funds from an account.
+    Handles withdrawing funds from an account with input validation.
     Manages the Withdrawing process and returns any errors encountered.
     """
 
@@ -18,25 +20,27 @@ class Withdrawal:
             withdrawal_amount (float): The amount withdraw.
             database: The database handler for account operations.
         """
-
         self.from_id = from_id
         self.withdrawal_amount = withdrawal_amount
         self.database = database
 
-    def try_withdrawal(self):
+    def try_withdrawal(self) -> list[str]:
         """
-        Attempts to withdraw funds from an account.
+        Attempt withdrawal after validating inputs.
         Returns a list of error messages if the withdrawal fails.
         """
-        output = []
-        withdraw_errors = []
+        errors = []
 
-        withdraw_errors = self.database.withdraw_from_account(self.from_id, self.withdrawal_amount)
+        # Validate account number
+        if not InputValidator.validate_account_number(self.from_id):
+            errors.append("Invalid account number")
 
-        if not withdraw_errors:
-            return []
-        else:
-            for error in withdraw_errors:
-                output.append(error)
+        # Validate withdrawal amount
+        if not InputValidator.validate_currency_amount(self.withdrawal_amount):
+            errors.append("Invalid withdrawal amount (must be positive with ≤ 2 decimals)")
 
-        return output
+        if errors:
+            return errors
+
+        # Proceed with database operation
+        return self.database.withdraw_from_account(self.from_id, self.withdrawal_amount)

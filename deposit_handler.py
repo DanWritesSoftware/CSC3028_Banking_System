@@ -1,11 +1,13 @@
 """
 deposit_handler.py
-This module defines the Deposit class, which handles transferring funds to an account.
+This module defines the Deposit class, which handles depositing funds to an account.
 """
+
+from input_validator import InputValidator
 
 class Deposit:
     """
-    Handles Depositing funds to an account.
+    Handles depositing funds to an account with input validation.
     Manages the depositing process and returns any errors encountered.
     """
 
@@ -18,25 +20,27 @@ class Deposit:
             deposit_amount (float): The amount to transfer.
             database: The database handler for account operations.
         """
-
         self.to_id = to_id
         self.deposit_amount = deposit_amount
         self.database = database
 
-    def try_deposit(self):
+    def try_deposit(self) -> list[str]:
         """
-        Attempts to deposit funds to an account.
+        Attempt deposit after validating inputs.
         Returns a list of error messages if the transfer fails.
         """
-        output = []
-        deposit_errors = []
+        errors = []
 
-        deposit_errors = self.database.deposit_to_account(self.to_id, self.deposit_amount)
+        # Validate account number
+        if not InputValidator.validate_account_number(self.to_id):
+            errors.append("Invalid account number")
 
-        if not deposit_errors:
-            return []
-        else:
-            for error in deposit_errors:
-                output.append(error)
+        # Validate deposit amount
+        if not InputValidator.validate_currency_amount(self.deposit_amount):
+            errors.append("Invalid deposit amount (must be positive with ≤ 2 decimals)")
 
-        return output
+        if errors:
+            return errors
+
+        # Proceed with database operation
+        return self.database.deposit_to_account(self.to_id, self.deposit_amount)
