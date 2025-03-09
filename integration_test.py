@@ -21,7 +21,7 @@ class TestBankingIntegration(unittest.TestCase):
         cls.db_name = "test_banking.db"
         if os.path.exists(cls.db_name):
             os.remove(cls.db_name)
-            
+
         # Create tables using the EXACT schema expected by Database class
         with sqlite3.connect(cls.db_name) as conn:
             cursor = conn.cursor()
@@ -49,7 +49,7 @@ class TestBankingIntegration(unittest.TestCase):
         """Initialize test data for each test"""
         print(f"\n--- Initializing Test {self._testMethodName} ---")
         self.db = Database(self.db_name)
-        
+
         # Clear existing data
         with sqlite3.connect(self.db_name) as conn:
             conn.execute("DELETE FROM Account")
@@ -60,7 +60,7 @@ class TestBankingIntegration(unittest.TestCase):
         self.user_id = "123"
         self.account1 = "1234567890"
         self.account2 = "0987654321"
-        
+
         print("Creating test user and accounts...")
         self.db.create_user(
             self.user_id,
@@ -86,14 +86,14 @@ class TestBankingIntegration(unittest.TestCase):
         print("\n[Deposit Test] Starting...")
         initial_balance = self.get_account_balance(self.account1)
         print(f"Initial balance: ${initial_balance:.2f}")
-        
+
         print(f"Attempting deposit of $200 to {self.account1}")
         deposit = Deposit(self.account1, 200.0, self.db)
         result = deposit.try_deposit()
-        
+
         self.assertEqual(result, [], "Deposit should have no errors")
         print("Deposit successful with no errors")
-        
+
         new_balance = self.get_account_balance(self.account1)
         print(f"New balance: ${new_balance:.2f}")
         self.assertEqual(new_balance, 1200.0, "Balance should be $1200 after deposit")
@@ -104,14 +104,14 @@ class TestBankingIntegration(unittest.TestCase):
         print("\n[Withdrawal Test] Starting...")
         initial_balance = self.get_account_balance(self.account1)
         print(f"Initial balance: ${initial_balance:.2f}")
-        
+
         print(f"Attempting withdrawal of $300 from {self.account1}")
         withdrawal = Withdrawal(self.account1, 300.0, self.db)
         result = withdrawal.try_withdrawal()
-        
+
         self.assertEqual(result, [], "Withdrawal should have no errors")
         print("Withdrawal successful with no errors")
-        
+
         new_balance = self.get_account_balance(self.account1)
         print(f"New balance: ${new_balance:.2f}")
         self.assertEqual(new_balance, 700.0, "Balance should be $700 after withdrawal")
@@ -123,14 +123,14 @@ class TestBankingIntegration(unittest.TestCase):
         initial_source = self.get_account_balance(self.account1)
         initial_dest = self.get_account_balance(self.account2)
         print(f"Initial balances - Source: ${initial_source:.2f}, Dest: ${initial_dest:.2f}")
-        
+
         print(f"Attempting transfer of $300 from {self.account1} to {self.account2}")
         transfer = Transfer(self.account1, self.account2, 300.0, self.db)
         result = transfer.try_transfer()
-        
+
         self.assertEqual(result, [], "Transfer should have no errors")
         print("Transfer successful with no errors")
-        
+
         new_source = self.get_account_balance(self.account1)
         new_dest = self.get_account_balance(self.account2)
         print(f"New balances - Source: ${new_source:.2f}, Dest: ${new_dest:.2f}")
@@ -143,15 +143,15 @@ class TestBankingIntegration(unittest.TestCase):
         print("\n[Insufficient Funds Test] Starting...")
         initial_balance = self.get_account_balance(self.account1)
         print(f"Initial balance: ${initial_balance:.2f}")
-        
+
         print(f"Attempting withdrawal of $1500 from {self.account1}")
         withdrawal = Withdrawal(self.account1, 1500.0, self.db)
         result = withdrawal.try_withdrawal()
-        
+
         print("Verifying error handling...")
         self.assertIn("Error: Insufficient Funds", result, "Should detect insufficient funds")
         print("Proper error detected")
-        
+
         final_balance = self.get_account_balance(self.account1)
         print(f"Final balance: ${final_balance:.2f}")
         self.assertEqual(final_balance, 1000.0, "Balance should remain unchanged")
