@@ -4,7 +4,6 @@ This script initializes and runs the Flask banking application.
 """
 
 import os
-import logging
 import time
 import random
 from flask import Flask, render_template, request, redirect, flash, session
@@ -15,9 +14,11 @@ from transfer_handler import Transfer
 from deposit_handler import Deposit
 from withdrawal_handler import Withdrawal
 from input_validator import InputValidator
+from log_manager import logging
 
 # Initialize Flask app
 app = Flask(__name__)
+
 logging.info("Logging system initialized.")
 
 # Configure environment-specific settings
@@ -42,23 +43,6 @@ Session(app)
 # Initialize application components
 session_manager = SessionManager()
 user_manager = UserManager()
-
-# Ensure logs directory exists
-LOG_DIR = "logs"
-os.makedirs(LOG_DIR, exist_ok=True)
-
-# Configure logging
-LOG_FILE = os.path.join(LOG_DIR, "banking_system.log")
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8'),
-        logging.StreamHandler()
-    ],
-    force=True  # Ensures old handlers don’t interfere
-)
 
 # To hold failed login attempts
 failed_login_attempts = {}
