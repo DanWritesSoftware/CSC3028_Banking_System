@@ -4,7 +4,8 @@ This script initializes and runs the Flask banking application.
 """
 
 import os
-import logging
+import time
+import random
 from flask import Flask, render_template, request, redirect, flash, session
 from flask_session import Session
 from user_management import UserManager
@@ -13,35 +14,33 @@ from transfer_handler import Transfer
 from deposit_handler import Deposit
 from withdrawal_handler import Withdrawal
 from input_validator import InputValidator
-import random # for account number generation
-
-# Ensure logs directory exists
-LOG_DIR = "logs"
-os.makedirs(LOG_DIR, exist_ok=True)
-
-# Configure logging
-LOG_FILE = os.path.join(LOG_DIR, "banking_system.log")
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8'),
-        logging.StreamHandler()
-    ],
-    force=True  # Ensures old handlers don’t interfere
-)
+from log_manager import logging
 
 # Initialize Flask app
 app = Flask(__name__)
+
 logging.info("Logging system initialized.")
 
-# Flask-Session configuration
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "default_secret_key")
+# Configure environment-specific settings
+if os.getenv('FLASK_ENV') == 'testing':
+    # Testing configurations
+    app.config.update(
+        TESTING=True,
+        WTF_CSRF_ENABLED=False,
+        SECRET_KEY="test-secret-key",
+        SESSION_TYPE="filesystem"
+    )
+else:
+    # Production configurations
+    app.config.update(
+        SECRET_KEY=os.getenv("SECRET_KEY", "default-secret-key"),
+        SESSION_TYPE="filesystem"
+    )
+
+# Initialize session extension
 Session(app)
 
-# Initialize session manager and user manager
+# Initialize application components
 session_manager = SessionManager()
 user_manager = UserManager()
 
@@ -82,7 +81,9 @@ def login():
             flash('Invalid credentials' if result is None else '2FA required', 'error')
 
             if failed_login_attempts[username] >= 3:
-                logging.error(f"SECURITY INCIDENT: More than three failed login attempts for user: {username} from {request.remote_addr}")
+                logging.error(
+                    f"SECURITY INCIDENT: More than three failed login attempts for user: {
+                        username} from {request.remote_addr}")
     return render_template('login.html')
 
 @app.route('/verify-2fa', methods=['GET', 'POST'])
@@ -130,11 +131,13 @@ def dashboard():
 
         if not valid.validate_account_number(account.accountNumber):
             # Account Error
-            validation_errors.append(f"ERROR READING DATA - Account number {account.accountNumber} is invalid.")
+            validation_errors.append(f"ERROR READING DATA - Account number {
+                account.accountNumber} is invalid.")
 
         #if valid.validate_currency_amount(account.balance) == False:
             # Balance Error
-            validation_errors.append(f"ERROR READING DATA - Balance for account {account.accountNumber} is invalid.")
+            validation_errors.append(f"ERROR READING DATA - Balance for account {
+                                        account.accountNumber} is invalid.")
 
     if validation_errors:
         # Show errors to user
@@ -144,14 +147,15 @@ def dashboard():
         # redirect to error page where flashed messages are displayed.
         return render_template('error.html')
 
-    return render_template('home.html', account_list=account_array, username=session.get('username'))
+    return render_template('home.html', account_list=account_array,
+                            username=session.get('username'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def signup():
     if request.method == 'GET':
         return render_template('register.html')
 
-    """Handle user registration."""
+    #Handle user registration.
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
@@ -176,7 +180,7 @@ def password_reset():
         # Load Form
         return render_template('passwordReset.html')
 
-    """Handle password reset requests."""
+    # Handle password reset requests.
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
@@ -209,13 +213,15 @@ def transfer():
         if errors:
             for error in errors:
                 flash(error, 'error')
-                logging.warning(f"Failed transfer attempt by {session['username']} from {fromAccountID} to {toAccountID}: {error}")
+                logging.warning(f"Failed transfer attempt by {session['username']} from {
+                    fromAccountID} to {toAccountID}: {error}")
             return redirect('/transfer')
         else:
-            logging.info(f"User {session['username']} transferred {transferAmount} from {fromAccountID} to {toAccountID}.")
+            logging.info(f"User {session['username']} transferred {transferAmount} from {
+                fromAccountID} to {toAccountID}.")
             flash('Transfer Success!')
             return redirect('/home')
-        
+
 @app.route('/deposit', methods=['GET','POST'])
 def deposit():
     if request.method == 'GET':
@@ -232,7 +238,7 @@ def deposit():
     else:
         flash('Deposit Success!')
         return redirect('/home')
-    
+
 @app.route('/withdraw', methods=['GET','POST'])
 def withdraw():
     if request.method == 'GET':
@@ -274,12 +280,14 @@ def new():
 
         if not valid.validate_username(account_name):
             # Account name issue
-            validationErrors.append(f"ERROR Account Name {account_name} is invalid. Please keep names between 5 and 20 Characters.")
+            validationErrors.append(f"ERROR Account Name {
+                account_name} is invalid. Please keep names between 5 and 20 Characters.")
 
         try:
             if not valid.validate_currency_amount(float(account_value)):
                 # Currency issue
-                validationErrors.append(f"ERROR Currency Value {account_value} is invalid. Please include the decimals after the whole number.")
+                validationErrors.append(f"ERROR Currency Value {
+                account_value} is invalid. Please include the decimals after the whole number.")
         except ValueError:
             # Not a number
             validationErrors.append(f"ERROR Please Input Digits.")
@@ -300,7 +308,9 @@ def new():
 
         # Create account in database
         #db.createAccount(randomAccount,1,accountName,accountValue)
-        user_manager.get_database().create_account(str(random_account),session.get('user_id'), account_name, float(account_value))
+        user_manager.get_database().create_account(str(random_account),
+                    session.get('user_id'), account_name, float(account_value))
+        flash("Account created successfully!", 'success')
         return redirect('/home')
 
 @app.route('/account/<account_index>')
@@ -323,7 +333,19 @@ def account_details(account_index):
     account_number = account_info.accountNumber
     account_name = account_info.type
     account_value = account_info.balance
-    return render_template('account_details.html', account_number = account_number, account_name = account_name, account_value = account_value)
+    return render_template('account_details.html', account_number = account_number,
+                            account_name = account_name, account_value = account_value)
+
+@app.route('/test/get_verification_code/<email>')
+def test_get_verification_code(email):
+    """Test endpoint to retrieve 2FA codes (testing only)"""
+    if not app.config.get('TESTING'):
+        return "Endpoint disabled in production", 403
+
+    code_data = user_manager._verification_codes.get(email)
+    if code_data and time.time() < code_data['expires']:
+        return {'code': code_data['code']}
+    return {'error': 'Code not found or expired'}, 404
 
 if __name__ == '__main__':
     app.run(debug=False) # Changed to false, for the log to show output
