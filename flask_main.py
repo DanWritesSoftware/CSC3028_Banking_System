@@ -130,7 +130,12 @@ def verify_2fa():
         if user:
             session['user_id'] = user['usrID']
             session['username'] = user['usrName']
+            session['role_id'] = user['RoleID']
             session.pop('2fa_email', None)
+
+            if user['RoleID'] == 3:
+                return redirect('/customerHome')
+            
             return redirect('/home')
 
         flash('Invalid verification code', 'error')
@@ -177,6 +182,40 @@ def dashboard():
         return render_template('error.html')
 
     return render_template('home.html', account_list=account_array,
+                            username=session.get('username'))
+
+@app.route('/customerHome')
+def customerDashboard():
+    """Render the dashboard for logged-in users."""
+    if 'user_id' not in session:
+        flash('You must be logged in to view this page', 'error')
+        return redirect('/login')
+    # Fetch user accounts
+    account_array = user_manager.get_database().get_user_accounts(session.get('user_id'))
+    # Initialize a list for error messages
+    validation_errors = []
+    valid = InputValidator()
+
+    # Iterate through each account and validate
+    for account in account_array:
+
+        if not valid.validate_account_number(account.accountNumber):
+            # Account Error
+            validation_errors.append(f"ERROR READING DATA - Account number {account.accountNumber} is invalid.")
+
+        #if valid.validate_currency_amount(account.balance) == False:
+            # Balance Error
+            validation_errors.append(f"ERROR READING DATA - Balance for account {account.accountNumber} is invalid.")
+
+    if validation_errors:
+        # Show errors to user
+        for error in validation_errors:
+            flash(error, 'error')
+            print(error)
+        # redirect to error page where flashed messages are displayed.
+        return render_template('error.html')
+
+    return render_template('customerHome.html', account_list=account_array,
                             username=session.get('username'))
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -388,7 +427,7 @@ def account_details(account_index):
         user_id = session.get('user_id')
         account_info = user_manager.get_user_account_info_from_index(user_id,int(account_index))
     except IndexError:
-        flash('It looks like your lost. Try returning to the home page.', 'error')
+        flash('It looks like you are lost. Try returning to the home page.', 'error')
         return render_template('error.html')
     except Exception as e:
         flash(f'An unexpected error occurred: {str(e)}', 'error')
