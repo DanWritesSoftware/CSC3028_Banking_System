@@ -5338,3 +5338,4 @@ sqlite3.OperationalError: table User has no column named RoleID
 2025-04-02 20:55:26,807 - INFO - Incoming request: GET http://127.0.0.1:5000/static/style.css from 127.0.0.1
 2025-04-02 20:55:26,808 - INFO - Response status: 304 for GET http://127.0.0.1:5000/static/style.css
 2025-04-02 20:55:26,812 - INFO - 127.0.0.1 - - [02/Apr/2025 20:55:26] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-04-02 20:56:01,675 - INFO - Sending data: {"id": 4, "jsonrpc": "2.0", "result": []}
