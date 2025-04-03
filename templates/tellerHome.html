@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <title>Home</title>
+</head>
+
+<link rel="stylesheet" href="{{url_for('static', filename='evilStyle.css') }}">
+
+<div class="header">
+    <h1>Evil Banking System</h1>
+    <h4>Welcome, Evil Teller >:3{{ username }}</h4>
+    <div class="headerGrid">
+        <div><a href="/logout">Logout</a></div>
+        <div><a href="/password-reset">Reset Password</a></div>
+        <div><a href="/new">New Bank Account</a></div>
+        <div><a href="/deposit">Deposit</a></div>
+        <div><a href="/withdraw">Withdraw</a></div>
+        <div><a href="/transfer">Transfer Money</a></div>
+    </div>
+
+</div>
+<!-- Display flash messages here -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashed-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        <h4>{{ message }}</h4>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+<body>
+    <div class="grid-container">
+        {% for account in account_list %}
+            <div class="grid-item">
+                <a class="buttonClass" href="/account/{{ loop.index - 1 }}"><h1>{{ account.type }}</h1><body>${{ account.balance }}</body></a>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

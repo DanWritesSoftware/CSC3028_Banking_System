@@ -136,7 +136,11 @@ def verify_2fa():
             if user['RoleID'] == 3:
                 return redirect('/customerHome')
             
-            return redirect('/home')
+            if user['RoleID'] == 2:
+                return redirect('/tellerHome')
+            
+            if user['RoleID'] == 1:
+                return redirect('/home')
 
         flash('Invalid verification code', 'error')
     return render_template('verify_2fa.html')
@@ -216,6 +220,40 @@ def customerDashboard():
         return render_template('error.html')
 
     return render_template('customerHome.html', account_list=account_array,
+                            username=session.get('username'))
+
+@app.route('/tellerHome')
+def tellerDashboard():
+    """Render the dashboard for logged-in Tellers."""
+    if 'user_id' not in session:
+        flash('You must be logged in to view this page', 'error')
+        return redirect('/login')
+    # Fetch user accounts
+    account_array = user_manager.get_database().get_user_accounts(session.get('user_id'))
+    # Initialize a list for error messages
+    validation_errors = []
+    valid = InputValidator()
+
+    # Iterate through each account and validate
+    for account in account_array:
+
+        if not valid.validate_account_number(account.accountNumber):
+            # Account Error
+            validation_errors.append(f"ERROR READING DATA - Account number {account.accountNumber} is invalid.")
+
+        #if valid.validate_currency_amount(account.balance) == False:
+            # Balance Error
+            validation_errors.append(f"ERROR READING DATA - Balance for account {account.accountNumber} is invalid.")
+
+    if validation_errors:
+        # Show errors to user
+        for error in validation_errors:
+            flash(error, 'error')
+            print(error)
+        # redirect to error page where flashed messages are displayed.
+        return render_template('error.html')
+
+    return render_template('tellerHome.html', account_list=account_array,
                             username=session.get('username'))
 
 @app.route('/register', methods=['GET', 'POST'])
