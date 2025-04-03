@@ -12,16 +12,21 @@ import socket
 from email.message import EmailMessage
 from typing import Optional, Dict
 from Account import Account
+from flask import session
 
 import bcrypt
 from database_handler import Database
 from input_validator import InputValidator
 
+import os 
+
+print("📂 Connected to DB at:", os.path.abspath("QuarantineBankingDatabase.db"))
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Database and validation instances
-db_manager = Database("BankingDatabase.db")
+db_manager = Database("QuarantineBankingDatabase.db")
 input_validator = InputValidator()
 
 # Constants
@@ -53,7 +58,7 @@ class UserManager:
         return {}
 
 
-    def sign_up(self, username: str, email: str, password: str, confirm_password: str) -> str:
+    def sign_up_customer(self, username: str, email: str, password: str, confirm_password: str) -> str:
         """Registers a new user with hashed password security."""
         if not input_validator.validate_username(username):
             logging.warning("Invalid username provided.")
@@ -75,9 +80,61 @@ class UserManager:
                 break
 
         hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        db_manager.create_user(user_id, username, email, hashed_password)
+        db_manager.create_user(user_id, username, email, hashed_password, 3)
         logging.info("User %s registered successfully.", username)
         return "User registered successfully!"
+    
+    def sign_up_teller(self, username: str, email: str, password: str, confirm_password: str) -> str:
+        """Registers a new user with hashed password security."""
+        if not input_validator.validate_username(username):
+            logging.warning("Invalid username provided.")
+            return "Invalid username, please try again."
+        if not input_validator.validate_email(email):
+            logging.warning("Invalid email format.")
+            return "Invalid email, please try again."
+        if not input_validator.validate_password_complexity(password):
+            logging.warning("Password does not meet complexity requirements.")
+            return "Password not complex enough, please try again."
+        if password != confirm_password:
+            return "Passwords do not match."
+        if db_manager.email_in_use(email):
+            return "Email address already in use!"
+
+        while True:
+            user_id = ''.join(random.choices('0123456789', k=USER_ID_LENGTH))
+            if not db_manager.user_id_in_use(user_id):
+                break
+
+        hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        db_manager.create_user(user_id, username, email, hashed_password, 2)
+        logging.info("User %s registered successfully.", username)
+        return "Teller registered successfully!"
+    
+    def sign_up_admin(self, username: str, email: str, password: str, confirm_password: str) -> str:
+        """Registers a new user with hashed password security."""
+        if not input_validator.validate_username(username):
+            logging.warning("Invalid username provided.")
+            return "Invalid username, please try again."
+        if not input_validator.validate_email(email):
+            logging.warning("Invalid email format.")
+            return "Invalid email, please try again."
+        if not input_validator.validate_password_complexity(password):
+            logging.warning("Password does not meet complexity requirements.")
+            return "Password not complex enough, please try again."
+        if password != confirm_password:
+            return "Passwords do not match."
+        if db_manager.email_in_use(email):
+            return "Email address already in use!"
+
+        while True:
+            user_id = ''.join(random.choices('0123456789', k=USER_ID_LENGTH))
+            if not db_manager.user_id_in_use(user_id):
+                break
+
+        hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        db_manager.create_user(user_id, username, email, hashed_password, 1)
+        logging.info("User %s registered successfully.", username)
+        return "Administrator registered successfully!"
 
     def login(self, username: str, password: str) -> Optional[Dict]:
         """Initiates authentication and triggers 2FA email."""
@@ -114,7 +171,18 @@ class UserManager:
 
         if stored_data['code'] == code:
             del self._verification_codes[email]
-            return db_manager.get_user_by_email(email)
+
+            user_data = db_manager.get_user_by_email(email)
+
+            if user_data:
+                session['username'] = user_data['usrName']
+                session['user_id'] = user_data['usrID']
+                session['email'] = user_data['email']
+                session['role_id'] = user_data['RoleID']
+
+                logging.info("User %s logged in with RoleID %s", user_data['usrName'], user_data['RoleID'])
+
+                return user_data
 
         logging.warning("Invalid code for %s", email)
         return None
@@ -126,6 +194,10 @@ class UserManager:
             'code': code,
             'expires': time.time() + CODE_EXPIRATION
         }
+
+        if os.getenv("FLASK_ENV", "").lower() in ["testing", "development"]:
+            print(f"[DEV MODE] 2FA code for {email}: {code}")  # Force print for visibility
+            logging.warning(f"[DEV MODE] 2FA code for {email}: {code}")
         return code
 
     def _send_verification_email(self, email: str, code: str) -> None:

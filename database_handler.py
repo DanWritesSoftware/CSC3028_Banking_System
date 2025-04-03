@@ -14,42 +14,52 @@ class Database:
 
     def __init__(self, name):
         self.name = name
+        self.connection = None
+
+    def get_connection(self):
+        
+        if self.connection is None:
+            self.connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
+        return self.connection
+    
+    def get_cursor(self):
+        return self.get_connection().cursor()
+    
+    def close_connection(self):
+        if self.connection:
+            self.connection.close()
+            self.connection = None
 
     def create_account(self, acc_id: str, usr_id: str, acc_name: str, acc_balance: float) -> bool:
         """Creates a new account in the database."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
-
+        cursor = self.get_cursor()
         cursor.execute(
-            "INSERT INTO Account (accID, accType, accUserID, accValue) VALUES (?, ?, ?, ?)",
+            "INSERT INTO Account (accID, accType, usrID, accValue) VALUES (?, ?, ?, ?)",
             (acc_id, acc_name, usr_id, acc_balance)
         )
-        connection.commit()
-        connection.close()
+        self.connection.commit()
+        self.close_connection()
         return True
 
-    def create_user(self, usr_id: int, usr_name: str, email: str, password: str) -> bool:
+    def create_user(self, usr_id: str, usr_name: str, email: str, password: str, role_id: int) -> bool:
         """Creates a new user in the database."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
-
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
 
         cursor.execute(
-            "INSERT INTO User (usrID, usrName, email, password) VALUES (?, ?, ?, ?)",
-            (usr_id, usr_name, email, password)
+            "INSERT INTO User (usrID, usrName, email, password, RoleID) VALUES (?, ?, ?, ?, ?)",
+            (usr_id, usr_name, email, password, role_id)
         )
-        connection.commit()
-        connection.close()
+        self.connection.commit()
+        self.close_connection()
         return True
 
     def get_user_accounts(self, usr_id: str) -> list[Account]:
         """Retrieves all accounts for a given user ID."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
 
-        cursor.execute("SELECT * FROM Account WHERE accUserID=?", (usr_id,))
+        cursor.execute("SELECT * FROM Account WHERE usrID=?", (usr_id,))
         rows = cursor.fetchall()
 
         accounts = []
@@ -59,14 +69,14 @@ class Database:
             acc_type = row[2]
             accounts.append(Account(acc_id, acc_type, acc_value))
 
-        connection.close()
+        self.connection.commit()
+        self.close_connection()
         return accounts
 
     def get_users(self, usr_id: str) -> list[dict]:
         """Retrieves user data by user ID."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
 
         cursor.execute("SELECT * FROM User WHERE usrID=?", (usr_id,))
         rows = cursor.fetchall()
@@ -80,14 +90,13 @@ class Database:
                 "password": row[3]
             })
 
-        connection.close()
+        self.close_connection()
         return users
 
     def user_login(self, user_name: str, password: str) -> dict | None:
         """Authenticates a user and returns their data if successful."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
 
         cursor.execute(
             "SELECT * FROM User WHERE usrName=? AND password=?",
@@ -95,7 +104,7 @@ class Database:
         )
         row = cursor.fetchone()
 
-        connection.close()
+        self.close_connection()
 
         if row:
             return {
@@ -108,45 +117,41 @@ class Database:
 
     def account_id_in_use(self, random_id: str) -> bool:
         """Returns True if the account ID is in use."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
 
         cursor.execute("SELECT * FROM Account WHERE accID=?", (random_id,))
         rows = cursor.fetchall()
 
-        connection.close()
+        self.close_connection()
         return bool(rows)
 
     def email_in_use(self, email_address: str) -> bool:
         """Returns True if the email address is in use."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
 
         cursor.execute("SELECT * FROM User WHERE email=?", (email_address,))
         rows = cursor.fetchall()
 
-        connection.close()
+        self.close_connection()
         return bool(rows)
 
     def user_id_in_use(self, random_id: str) -> bool:
         """Returns True if the user ID is in use."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
 
         cursor.execute("SELECT * FROM User WHERE usrID=?", (random_id,))
         rows = cursor.fetchall()
 
-        connection.close()
+        self.close_connection()
         return bool(rows)
 
     def withdraw_from_account(self, account_id: str, amount: float) -> list[str]:
         """Withdraws funds from an account."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
 
         output = []
         cursor.execute("SELECT accValue FROM Account WHERE accID=?", (account_id,))
@@ -156,7 +161,7 @@ class Database:
             value = float(result[0])  # Ensure value is treated as float
         else:
             output.append("Error: Withdrawal Account not found")
-            connection.close()
+            self.close_connection()
             return output
 
         if value < amount:
@@ -165,9 +170,9 @@ class Database:
             new_value = value - amount
             cursor.execute("BEGIN TRANSACTION;")
             cursor.execute("UPDATE Account SET accValue=? WHERE accID=?",(new_value, account_id))
-            connection.commit()
+            self.connection.commit()
 
-        connection.close()
+        self.close_connection()
         return output
 
     def deposit_to_account(self, account_id: str, amount: float) -> list[str]:
@@ -175,9 +180,7 @@ class Database:
         if amount <= 0:
             return ["Error: Deposit amount must be greater than zero"]
 
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
-
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
 
         cursor.execute("SELECT accValue FROM Account WHERE accID=?", (account_id,))
         result = cursor.fetchone()
@@ -185,78 +188,91 @@ class Database:
         if result:
             value = float(result[0])  # Ensure value is treated as float
         else:
-            connection.close()
+            self.close_connection()
             return ["Error: Depositing Account not found"]
 
         new_value = value + amount
         cursor.execute("BEGIN TRANSACTION;") 
         cursor.execute("UPDATE Account SET accValue=? WHERE accID=?", (new_value, account_id))
-        connection.commit()
+        self.connection.commit()
 
-        connection.close()
+        self.close_connection()
         return []
 
     def password_reset(self, user_name: str, email: str, password: str) -> bool:
         """Resets a user's password."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
 
         cursor.execute(
             "UPDATE User SET password=? WHERE usrName=? AND email=?",
             (password, user_name, email)
         )
-        connection.commit()
-        connection.close()
+        self.connection.commit()
+        self.close_connection()
         return True
 
     def get_user_by_username(self, username: str) -> dict | None:
         """Retrieves user data by username."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
 
         cursor.execute("SELECT * FROM User WHERE usrName=?", (username,))
         row = cursor.fetchone()
 
-        connection.close()
+        self.close_connection()
 
         if row:
             return {
                 "usrID": row[0],
                 "usrName": row[1],
                 "email": row[2],
-                "password": row[3]
+                "password": row[3],
+                "RoleID":row[4]
             }
         return None
 
     def get_user_by_email(self, email: str) -> dict | None:
         """Retrieves user by email."""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
         cursor.execute("SELECT * FROM User WHERE email=?", (email,))
         row = cursor.fetchone()
-        connection.close()
+        self.close_connection()
 
         if row:
             return {
                 "usrID": row[0],
                 "usrName": row[1],
                 "email": row[2],
-                "password": row[3]
+                "password": row[3],
+                "RoleID":row[4]
             }
         return None
     
+    def get_user_creation_log(self, identifier:str) -> dict | None:
+        "Retireves the log entry by a user's ID"
+
+        cursor = self.get_cursor()
+        cursor.execute("SELECT * FROM auditUserCreationLog WHERE usrID=? OR email=? OR usrname=?", 
+        (identifier, identifier, identifier)
+        )
+        rows = cursor.fetchall()
+        self.close_connection()
+
+        return [
+            {"ID": row[0], "usrID": row[1], "email": row[2], "password": row[3]}
+            for row in rows
+        ] if rows else []
+    
+    
+    
     def rollback(self) -> bool:
         """Rolls Back Most recent transaction"""
-        connection = sqlite3.connect(self.name, check_same_thread=False, timeout=10)
 
-        cursor = connection.cursor()
+        cursor = self.get_cursor()
         cursor.execute("ROLLBACK;")
-        connection.close()
-
-
+        self.close_connection()
 
 
 

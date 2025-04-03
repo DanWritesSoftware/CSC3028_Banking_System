@@ -1,0 +1,98 @@
+.buttonClass {
+    position: absolute;
+
+    background-color:#a90000;
+    color: #000000;
+    border:none;
+    border-radius:10px;
+    padding:15px;
+    min-height:200px;
+    min-width: 420px;
+    text-decoration: none;
+}
+
+    .buttonClass:hover {
+    background: rgb(255, 0, 0)
+}
+
+    .smallButtonClass {
+    position: absolute;
+
+    background-color:#460303;
+    color: #fff;
+    border:none;
+    border-radius:10px;
+    padding:15px;
+    min-height:50px;
+    min-width: 300px;
+    text-decoration: none;
+    }
+
+    .smallButtonClass:hover {
+        background: rgb(153, 0, 0)
+    }
+
+    h1 {
+        text-align: center;
+        font-family: Arial
+    }
+
+    h4 {
+        text-align: center;
+        font-family: Arial
+    }
+
+    p.a {
+        font-family: Arial
+    }
+
+    .grid-container {
+        float: center;
+        display: inline-grid;
+    }
+    .grid-item {
+        padding: 120px;
+        margin-left:-70px;
+        font-size: 30px;
+        text-align: center;
+    }
+    .header {
+        padding:30px;
+        text-align: center;
+        background: #ff0000;
+        font-size: 30px;
+    }
+
+    .headerGrid {
+        display:grid;
+        gap: 50px;
+        grid-template-columns: repeat(5, 1fr);
+    }
+
+    .headerItem {
+        /* grid-column-start: 1;
+         grid-column-end: 5; */
+    }
+
+        input {
+      border: 2px solid red;
+      width: 33%;
+      padding: 12px 20px;
+      margin: 8px 0;
+      box-sizing: border-box;
+    }
+
+    a:link, a:visited {
+  background-color: #3e0051;
+  color: white;
+  padding: 14px 25px;
+  border-radius:10px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
+
+body {
+    background-color: #000000;
+    color: white;
+}

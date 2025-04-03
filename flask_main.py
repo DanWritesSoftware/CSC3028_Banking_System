@@ -16,11 +16,18 @@ from withdrawal_handler import Withdrawal
 from input_validator import InputValidator
 from log_manager import logging
 
-# Initialize Flask app
+'''# Initialize Flask app
 app = Flask(__name__)
 
 logging.info("Logging system initialized.")
+'''
 
+app = Flask(__name__)
+app.config["TESTING"] = True
+logging.info("Logging system initialized.")
+
+
+'''
 # Configure environment-specific settings
 if os.getenv('FLASK_ENV') == 'testing':
     # Testing configurations
@@ -36,6 +43,30 @@ else:
         SECRET_KEY=os.getenv("SECRET_KEY", "default-secret-key"),
         SESSION_TYPE="filesystem"
     )
+    '''
+
+env = os.getenv('FLASK_ENV', '').lower()
+
+if env == 'testing':
+    app.config.update(
+        TESTING=True,
+        WTF_CSRF_ENABLED=False,
+        SECRET_KEY="test-secret-key",
+        SESSION_TYPE="filesystem"
+    )
+elif env == 'development':
+    app.config.update(
+        DEBUG=True,
+        TESTING = True,
+        SECRET_KEY="dev-secret-key",
+        SESSION_TYPE="filesystem"
+    )
+else:
+    app.config.update(
+        SECRET_KEY=os.getenv("SECRET_KEY", "default-secret-key"),
+        SESSION_TYPE="filesystem"
+    )
+
 
 # Initialize session extension
 Session(app)
@@ -81,9 +112,7 @@ def login():
             flash('Invalid credentials' if result is None else '2FA required', 'error')
 
             if failed_login_attempts[username] >= 3:
-                logging.error(
-                    f"SECURITY INCIDENT: More than three failed login attempts for user: {
-                        username} from {request.remote_addr}")
+                logging.error(f"SECURITY INCIDENT: More than three failed login attenpts for user: {username} from {request.remote_addr}")
     return render_template('login.html')
 
 @app.route('/verify-2fa', methods=['GET', 'POST'])
@@ -110,8 +139,10 @@ def verify_2fa():
 @app.route('/logout')
 def logout():
     """Clear session and logout user."""
+    #session.clear()
+    username = session.get('username', 'unknown')
+    logging.info(f"User {username} logged out.")
     session.clear()
-    logging.info(f"User {session['username']} logged out.")
     return redirect('/')
 
 @app.route('/home')
@@ -131,13 +162,11 @@ def dashboard():
 
         if not valid.validate_account_number(account.accountNumber):
             # Account Error
-            validation_errors.append(f"ERROR READING DATA - Account number {
-                account.accountNumber} is invalid.")
+            validation_errors.append(f"ERROR READING DATA - Account number {account.accountNumber} is invalid.")
 
         #if valid.validate_currency_amount(account.balance) == False:
             # Balance Error
-            validation_errors.append(f"ERROR READING DATA - Balance for account {
-                                        account.accountNumber} is invalid.")
+            validation_errors.append(f"ERROR READING DATA - Balance for account {account.accountNumber} is invalid.")
 
     if validation_errors:
         # Show errors to user
@@ -162,14 +191,52 @@ def signup():
         password = request.form.get('password')
         confirm_password = request.form.get('confirmPassword')
 
-        result = user_manager.sign_up(username, email, password, confirm_password)
+        result = user_manager.sign_up_customer(username, email, password, confirm_password)
         if result == "User registered successfully!":
             flash(result, 'success')
             return redirect('/login')
         flash(result, 'error')
     return render_template('register.html')
-@app.route('/password-reset', methods=['GET', 'POST'])
 
+@app.route('/registerTeller', methods=['GET', 'POST'])
+def register_teller():
+    if request.method == 'GET':
+        return render_template('registerTeller.html')
+
+    #Handle teller registration.
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirmPassword')
+
+        result = user_manager.sign_up_teller(username, email, password, confirm_password)
+        if result == "Teller registered successfully!":
+            flash(result, 'success')
+            return redirect('/login')
+        flash(result, 'error')
+    return render_template('registerTeller.html')
+
+@app.route('/registerAdmin', methods=['GET', 'POST'])
+def register_Admin():
+    if request.method == 'GET':
+        return render_template('registerAdmin.html')
+
+    #Handle teller registration.
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirmPassword')
+
+        result = user_manager.sign_up_admin(username, email, password, confirm_password)
+        if result == "Administrator registered successfully!":
+            flash(result, 'success')
+            return redirect('/login')
+        flash(result, 'error')
+    return render_template('registerAdmin.html')
+
+@app.route('/password-reset', methods=['GET', 'POST'])
 def password_reset():
     # Handle user not logged in
     if 'user_id' not in session:
@@ -213,12 +280,10 @@ def transfer():
         if errors:
             for error in errors:
                 flash(error, 'error')
-                logging.warning(f"Failed transfer attempt by {session['username']} from {
-                    fromAccountID} to {toAccountID}: {error}")
+                logging.warning(f"Failed transfer attempt by {session['username']} from {fromAccountID} to {toAccountID}: {error}")
             return redirect('/transfer')
         else:
-            logging.info(f"User {session['username']} transferred {transferAmount} from {
-                fromAccountID} to {toAccountID}.")
+            logging.info(f"User {session['username']} transferred {transferAmount} from {fromAccountID} to {toAccountID}.")
             flash('Transfer Success!')
             return redirect('/home')
 
@@ -280,14 +345,12 @@ def new():
 
         if not valid.validate_username(account_name):
             # Account name issue
-            validationErrors.append(f"ERROR Account Name {
-                account_name} is invalid. Please keep names between 5 and 20 Characters.")
+            validationErrors.append(f"ERROR Account Name {account_name} is invalid. Please keep names between 5 and 20 Characters.")
 
         try:
             if not valid.validate_currency_amount(float(account_value)):
                 # Currency issue
-                validationErrors.append(f"ERROR Currency Value {
-                account_value} is invalid. Please include the decimals after the whole number.")
+                validationErrors.append(f"ERROR Currency Value {account_value} is invalid. Please include the decimals after the whole number.")
         except ValueError:
             # Not a number
             validationErrors.append(f"ERROR Please Input Digits.")
@@ -348,4 +411,5 @@ def test_get_verification_code(email):
     return {'error': 'Code not found or expired'}, 404
 
 if __name__ == '__main__':
-    app.run(debug=False) # Changed to false, for the log to show output
+    #app.run(debug=False) # Changed to false, for the log to show output
+    app.run(debug=True) # Changed to true, in order to get the verification code on school wifi :3
