@@ -39,17 +39,17 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultHtmlFileTemplate": "HTML File",
-    "Python tests.Python tests in input_validator_test.py.executor": "Run",
-    "Python.email_test.executor": "Run",
-    "Python.flaskMain.executor": "Run",
-    "Python.flask_main.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "last_opened_file_path": "C:/Users/homes/Documents/GitHub/CSC3028_Banking_System"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;Python tests.Python tests in input_validator_test.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python.email_test.executor&quot;: &quot;Run&quot;,
+    &quot;Python.flaskMain.executor&quot;: &quot;Run&quot;,
+    &quot;Python.flask_main.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/homes/Documents/GitHub/CSC3028_Banking_System&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Python.flask_main">
     <configuration name="email_test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="CSC3028 Banking System" />

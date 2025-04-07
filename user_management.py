@@ -33,7 +33,7 @@ CODE_EXPIRATION = 600  # 10 minutes in seconds
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_FROM = "csc3028.evil.banking.system"
-EMAIL_PASSWORD = "doldkejwyvqplril"
+# EMAIL PASSWORD STORED IN TXT FILE - SEE get_gmail_password
 
 class UserManager:
     """Handles user authentication, registration, and 2FA."""
@@ -80,7 +80,7 @@ class UserManager:
         db_manager.create_user(user_id, username, email, hashed_password, 3)
         logging.info("User %s registered successfully.", username)
         return "User registered successfully!"
-    
+
     def sign_up_teller(self, username: str, email: str, password: str, confirm_password: str) -> str:
         """Registers a new user with hashed password security."""
         if not input_validator.validate_username(username):
@@ -106,7 +106,7 @@ class UserManager:
         db_manager.create_user(user_id, username, email, hashed_password, 2)
         logging.info("User %s registered successfully.", username)
         return "Teller registered successfully!"
-    
+
     def sign_up_admin(self, username: str, email: str, password: str, confirm_password: str) -> str:
         """Registers a new user with hashed password security."""
         if not input_validator.validate_username(username):
@@ -208,7 +208,7 @@ class UserManager:
         try:
             with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=60) as server:
                 server.starttls()
-                server.login(EMAIL_FROM, EMAIL_PASSWORD)
+                server.login(EMAIL_FROM, self.get_gmail_password())
                 server.send_message(msg)
             logging.info("Verification email sent to %s", email)
         except smtplib.SMTPException as e:
@@ -227,7 +227,7 @@ class UserManager:
 
         if not input_validator.validate_password_complexity(new_password):
             return "Password not secure."
-        
+
         # Check if user exists
         user_data = db_manager.get_user_by_username(username)
         if not user_data:
@@ -260,9 +260,9 @@ class UserManager:
         except Exception as e:
             logging.exception(f"Unexpected error retrieving account at index {index} for user {user_id}: {str(e)}")
             raise
-        
+
         return output
-    
+
     def transfer_funds_by_account_number(self, user_id: str, from_account_id: str, to_account_id: str, amount: float) -> list[str]:
         """
         Transfers funds from a user's account (by account number) to another account (also by account number).
@@ -305,3 +305,16 @@ class UserManager:
         except Exception as e:
             logging.exception(f"Exception during transfer: {str(e)}")
             return [f"Unexpected error during transfer: {str(e)}"]
+
+    def get_gmail_password(self) -> str:
+        """Get gmail password from text file in directory"""
+        filepath = "gmail_password.txt"
+        try:
+            with open(filepath, 'r', encoding='utf-8') as file:
+                return file.readline().strip()
+        except FileNotFoundError:
+            print(f"PLEASE ENTER GMAIL APP PASSWORD IN {filepath}. IF IT DOESN'T EXIST, CREATE IT.")
+            return ""
+        except Exception as e:
+            print(f"Error reading file: {e}")
+            return ""
