@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teller Deposit</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='evilStyle.css') }}">
+</head>
+<body>
+
+<h1 class="a">Teller Deposit Page Loaded</h1>
+
+<a href="/teller/account/{{ usr_id }}/{{ index }}" class="smallButtonClass">← Back to Account</a>
+
+<!-- Display flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flashed-messages">
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<h2 class="a">Deposit Funds</h2>
+
+<form method="POST" action="/teller/deposit/{{ usr_id }}/{{ index }}">
+    <p class="a">Deposit Amount</p>
+    <p>
+        <input type="number" name="amount" placeholder="Deposit Amount" step="0.01" min="0.01" required>
+    </p>
+    <p>
+        <input type="submit" value="Submit Deposit" class="smallButtonClass">
+    </p>
+</form>
+
+</body>
+</html>

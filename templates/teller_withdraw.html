@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <title>Teller Withdraw</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='evilStyle.css') }}">
+</head>
+<body>
+
+<a href="/teller/account/{{ usr_id }}/{{ index }}">back</a>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flashed-messages">
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<h2 class="a">Withdraw from {{ account.type }} Account</h2>
+<p class="a">Account Number: {{ account.accountNumber }}</p>
+<p class="a">Current Balance: ${{ account.balance }}</p>
+
+<form action="/teller/withdraw/{{ usr_id }}/{{ index }}" method="POST">
+    <p class="a">Amount</p>
+    <p><input type="number" name="amount" placeholder="Withdrawal Amount" step="0.01" min="0" required></p>
+
+    <p><input type="submit" class="smallButtonClass" value="Submit Withdrawal"></p>
+</form>
+
+</body>
+</html>

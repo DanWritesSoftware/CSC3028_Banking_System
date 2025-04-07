@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <title>Teller Transfer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='evilStyle.css') }}">
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .flashed-messages {
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        .flash-message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        .flash-message.success {
+            background-color: #2ecc71;
+            color: black;
+        }
+
+        .flash-message.error {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .form-block {
+            background-color: #1a1a1a;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            margin-bottom: 10px;
+            width: 250px;
+        }
+
+        .smallButtonClass {
+            padding: 8px 20px;
+            background-color: purple;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: cyan;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        h1, h2 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Teller Transfer Page Loaded</h1>
+
+    <a class="back-link" href="/teller/account/{{ usr_id }}/{{ index }}">← Back to Account</a>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashed-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <h2>Transfer Funds</h2>
+
+    <div class="form-block">
+        <form action="/teller/transfer/{{ usr_id }}/{{ index }}" method="POST">
+            <p>Transfer To (Account Number)</p>
+            <input type="number" name="toAccountId" placeholder="Destination Account Number" autocomplete="off" required /><br>
+
+            <p>Amount</p>
+            <input type="number" name="amount" placeholder="Transfer Amount" autocomplete="off" step="0.01" min="0.01" required /><br>
+
+            <input type="submit" class="smallButtonClass" value="Submit Transfer" />
+        </form>
+    </div>
+
+</body>
+</html>

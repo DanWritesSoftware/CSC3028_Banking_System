@@ -23,14 +23,14 @@ class TestUserManager(unittest.TestCase):
         """
         Test successful user signup with valid inputs.
         """
-        result = self.um.sign_up("validUser", "valid@example.com", "StrongPass1!", "StrongPass1!")
+        result = self.um.sign_up_customer("validUser", "valid@example.com", "StrongPass1!", "StrongPass1!")
         self.assertEqual(result, "User registered successfully!")
 
     def test_signup_mismatched_passwords(self):
         """
         Test user signup with mismatched passwords.
         """
-        result = self.um.sign_up("validUser", "valid@example.com", "StrongPass1!", "WrongPass!")
+        result = self.um.sign_up_customer("validUser", "valid@example.com", "StrongPass1!", "WrongPass!")
         self.assertEqual(result, "Passwords do not match.")
 
     @patch('user_management.UserManager._send_verification_email')
@@ -39,7 +39,7 @@ class TestUserManager(unittest.TestCase):
         Test successful login triggers 2FA email.
         """
         # Setup: Create a test user
-        self.um.sign_up("testUser", "test@example.com", "TestPass1!", "TestPass1!")
+        self.um.sign_up_customer("testUser", "test@example.com", "TestPass1!", "TestPass1!")
 
         # Test login
         result = self.um.login("testUser", "TestPass1!")
@@ -63,7 +63,7 @@ class TestUserManager(unittest.TestCase):
         Test successful 2FA verification.
         """
         # Setup: Create a test user and mock the verification code
-        self.um.sign_up("testUser", "test@example.com", "TestPass1!", "TestPass1!")
+        self.um.sign_up_customer("testUser", "test@example.com", "TestPass1!", "TestPass1!")
         mock_generate_code.return_value = "123456"  # Mock the code
 
         # Mock the email sending to avoid actual email delivery
@@ -83,7 +83,7 @@ class TestUserManager(unittest.TestCase):
         Test 2FA verification with invalid code.
         """
         # Setup: Create a test user
-        self.um.sign_up("testUser", "test@example.com", "TestPass1!", "TestPass1!")
+        self.um.sign_up_customer("testUser", "test@example.com", "TestPass1!", "TestPass1!")
 
         # Test verification with wrong code
         result = self.um.verify_2fa("test@example.com", "000000")
@@ -96,7 +96,7 @@ class TestUserManager(unittest.TestCase):
         Test 2FA verification with expired code.
         """
         # Setup: Create a test user
-        self.um.sign_up("testUser", "test@example.com", "TestPass1!", "TestPass1!")
+        self.um.sign_up_customer("testUser", "test@example.com", "TestPass1!", "TestPass1!")
         mock_generate_code.return_value = "123456"
         mock_time.return_value = 0  # Initial time at epoch
 

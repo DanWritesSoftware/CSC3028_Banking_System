@@ -198,6 +198,69 @@ class Database:
 
         self.close_connection()
         return []
+    
+    def transfer_funds_by_account_number(self, from_account_id: str, to_account_id: str, amount: float) -> list[str]:
+        """
+        Transfers funds from one account to another using account numbers.
+
+        Parameters:
+            from_account_number (str): The source account number.
+            to_account_number (str): The destination account number.
+            amount (float): Amount to transfer.
+
+        Returns:
+            list[str]: Empty list if successful, or list of error messages.
+        """
+        errors = []
+
+        if amount <= 0:
+            return ["Error: Transfer amount must be greater than zero"]
+
+        cursor = self.get_cursor()
+
+        # Fetch source account
+        cursor.execute("SELECT accValue FROM Account WHERE accID=?", (from_account_id,))
+        from_result = cursor.fetchone()
+
+        if not from_result:
+            self.close_connection()
+            return ["Error: Source account not found"]
+
+        from_balance = float(from_result[0])
+
+        # Fetch destination account
+        cursor.execute("SELECT accValue FROM Account WHERE accID=?", (to_account_id,))
+        to_result = cursor.fetchone()
+
+        if not to_result:
+            self.close_connection()
+            return ["Error: Destination account not found"]
+
+        if from_account_id == to_account_id:
+            self.close_connection()
+            return ["Error: Cannot transfer to the same account"]
+
+        if from_balance < amount:
+            self.close_connection()
+            return ["Error: Insufficient funds in the source account"]
+
+        # Perform transfer
+        new_from_balance = from_balance - amount
+        new_to_balance = float(to_result[0]) + amount
+
+        try:
+            cursor.execute("BEGIN TRANSACTION;")
+            cursor.execute("UPDATE Account SET accValue=? WHERE accID=?", (new_from_balance, from_account_id))
+            cursor.execute("UPDATE Account SET accValue=? WHERE accID=?", (new_to_balance, to_account_id))
+            self.connection.commit()
+        except Exception as e:
+            self.rollback()
+            errors.append(f"Transfer failed: {str(e)}")
+        finally:
+            self.close_connection()
+
+        return errors
+
 
     def password_reset(self, user_name: str, email: str, password: str) -> bool:
         """Resets a user's password."""

@@ -256,6 +256,148 @@ def tellerDashboard():
     return render_template('tellerHome.html', account_list=account_array,
                             username=session.get('username'))
 
+@app.route('/teller/account-lookup', methods=['GET', 'POST'])
+def teller_account_lookup():
+    '''Render the teller account lookup'''
+    if 'user_id' not in session or session.get('role_id') != 2: # Tellers only 
+        flash('Access Denied, Teller login credentials required, beginning self destruct', 'error')
+        return redirect('/login')
+    
+    account_info_list = []
+    
+    usr_id = None
+
+    if request.method == 'POST':
+        usr_id = request.form.get('usr_id')
+        try:
+            accounts = user_manager.get_database().get_user_accounts(usr_id)
+            for i, acc in enumerate(accounts):
+                account_info_list.append({
+                'index': i,
+                'type': acc.type,
+                'number': acc.accountNumber,
+                'balance': acc.balance
+                })
+        except Exception as e:
+            flash(f"Error retrieving accounts: {str(e)}", 'error')
+
+    return render_template('teller_account_lookup.html', accounts = account_info_list, usr_id = usr_id)
+
+@app.route('/teller/account/<usr_id>/<int:account_index>')
+def teller_view_account(usr_id, account_index):
+    """Allows tellers to view a specific customer's account."""
+    if not session.get('user_id') or session.get('role_id') != 2:
+        flash('Access denied. Teller login required.', 'error')
+        return redirect('/login')
+    
+    try:
+        account_info = user_manager.get_user_account_info_from_index(usr_id, account_index)
+            # DEBUG: Confirm values before rendering the template
+        print(f"[DEBUG] Rendering account_details.html with:")
+        print(f"        usr_id = {usr_id}")
+        print(f"        account_index = {account_index}")
+        print(f"        account_number = {account_info.accountNumber}")
+        print(f"        account_name = {account_info.type}")
+        print(f"        account_value = {account_info.balance}")
+
+        return render_template('account_details.html',
+                               account_number=account_info.accountNumber,
+                               account_name=account_info.type,
+                               account_value=account_info.balance,
+                               usr_id = usr_id,
+                               index=account_index
+                               )
+    except IndexError:
+        flash('That account index is invalid for this user.', 'error')
+    except Exception as e:
+        flash(f"Error retrieving account: {str(e)}", 'error')
+        raise
+    return render_template('error.html')
+
+@app.route('/teller/deposit/<usr_id>/<int:account_index>', methods=['GET', 'POST'])
+def teller_deposit(usr_id, account_index):
+    if 'user_id' not in session or session.get('role_id') != 2:
+        flash("Access denied. Teller login required.", 'error')
+        return redirect('/login')
+
+    account = user_manager.get_user_account_info_from_index(usr_id, account_index)
+
+    if request.method == 'POST':
+        amount = float(request.form.get('amount'))
+        if amount <= 0:
+            flash("Invalid amount.", "error")
+        else:
+            db = user_manager.get_database()
+            db.deposit_to_account(account.accountNumber, amount)
+            flash(f"${amount} deposited to account {account.accountNumber}.", "success")
+            return redirect(f'/teller/account/{usr_id}/{account_index}')
+
+    return render_template('teller_deposit.html', account=account, usr_id=usr_id, index=account_index)
+
+@app.route('/teller/withdraw/<usr_id>/<int:account_index>', methods=['GET', 'POST'])
+def teller_withdraw(usr_id, account_index):
+    if 'user_id' not in session or session.get('role_id') != 2:
+        flash("Access denied. Teller login required.", 'error')
+        return redirect('/login')
+
+    account = user_manager.get_user_account_info_from_index(usr_id, account_index)
+
+    if request.method == 'POST':
+        amount = float(request.form.get('amount'))
+        if amount <= 0 or amount > account.balance:
+            flash("Invalid or insufficient funds.", "error")
+        else:
+            db = user_manager.get_database()
+            db.withdraw_from_account(account.accountNumber, amount)
+            
+            flash(f"${amount} withdrawn from account {account.accountNumber}.", "success")
+            return redirect(f'/teller/account/{usr_id}/{account_index}')
+
+    return render_template('teller_withdraw.html', account=account, usr_id=usr_id, index=account_index)
+
+@app.route('/teller/transfer/<usr_id>/<int:account_index>', methods=['GET', 'POST'])
+def teller_transfer(usr_id, account_index):
+    """Allows teller to transfer funds from a user's account."""
+    if 'user_id' not in session or session.get('role_id') != 2:
+        flash('Access denied. Teller login required.', 'error')
+        return redirect('/login')
+
+    try:
+        from_account = user_manager.get_user_account_info_from_index(usr_id, account_index)
+        from_account_id = from_account.accountNumber  # This is the real ID used in the DB
+    except Exception as e:
+        logging.error(f"Account lookup failed for user {usr_id} at index {account_index}: {e}")
+        flash("Account lookup failed. Please verify the account information.", 'error')
+        return render_template("error.html")
+
+    if request.method == 'POST':
+        to_account_number = request.form.get('toAccountId')
+
+        try:
+            amount = float(request.form.get('amount'))
+        except (ValueError, TypeError):
+            flash("Invalid amount entered.", 'error')
+            return render_template("teller_transfer.html", usr_id=usr_id, index=account_index)
+
+        logging.info(f"[DEBUG] Teller transfer request: from_user={usr_id}, "
+                     f"from_account_id={from_account_id}, to_account={to_account_number}, amount={amount}")
+
+        result = user_manager.transfer_funds_by_account_number(
+            user_id=usr_id,
+            from_account_id=from_account_id,
+            to_account_id=to_account_number,
+            amount=amount
+        )
+
+        if result:
+            for error in result:
+                flash(error, 'error')
+        else:
+            flash(f"Successfully transferred ${amount:.2f} to account {to_account_number}.", 'success')
+            return redirect(f"/teller/account/{usr_id}/{account_index}")
+
+    return render_template("teller_transfer.html", usr_id=usr_id, index=account_index)
+
 @app.route('/register', methods=['GET', 'POST'])
 def signup():
     if request.method == 'GET':
