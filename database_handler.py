@@ -5,6 +5,7 @@ This module handles database operations for the banking system.
 
 import sqlite3
 from Account import Account
+from audit_log import AuditLog
 
 class Database:
     """
@@ -337,6 +338,30 @@ class Database:
         cursor.execute("ROLLBACK;")
         self.close_connection()
 
+    def get_audit_logs(self) -> []:
+        """Will return an array of all audit_log objects"""
+        connection = sqlite3.connect(self.name, check_same_thread=False)
+        cursor = connection.cursor()
+
+        cursor.execute(
+            ""
+            "SELECT * FROM auditLog"
+        )
+        rows = cursor.fetchall()
+        output = []
+        if rows:
+            for row in rows:
+                ID = row[0]
+                Operation = row[1]
+                TableName = row[2]
+                oldValue = row[3]
+                newValue = row[4]
+                ChangedAt = row[5]
+                l = AuditLog(int(ID),Operation,TableName,oldValue,newValue,ChangedAt)
+                output.append(l)
+
+        connection.close()
+        return output
 
 
     

@@ -133,14 +133,7 @@ def verify_2fa():
             session['role_id'] = user['RoleID']
             session.pop('2fa_email', None)
 
-            if user['RoleID'] == 3:
-                return redirect('/customerHome')
-            
-            if user['RoleID'] == 2:
-                return redirect('/tellerHome')
-            
-            if user['RoleID'] == 1:
-                return redirect('/home')
+            return redirect('/home')
 
         flash('Invalid verification code', 'error')
     return render_template('verify_2fa.html')
@@ -160,6 +153,13 @@ def dashboard():
     if 'user_id' not in session:
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
+    """Handle Teller / Admin Accounts"""
+    if session["role_id"] == '1':
+        return redirect('/admin')
+    if session["role_id"] == '2':
+        return redirect('/teller')
+    # else, render user account
+
     # Fetch user accounts
     account_array = user_manager.get_database().get_user_accounts(session.get('user_id'))
     # Initialize a list for error messages
@@ -188,80 +188,37 @@ def dashboard():
     return render_template('home.html', account_list=account_array,
                             username=session.get('username'))
 
-@app.route('/customerHome')
-def customerDashboard():
-    """Render the dashboard for logged-in users."""
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-    # Fetch user accounts
-    account_array = user_manager.get_database().get_user_accounts(session.get('user_id'))
-    # Initialize a list for error messages
-    validation_errors = []
-    valid = InputValidator()
-
-    # Iterate through each account and validate
-    for account in account_array:
-
-        if not valid.validate_account_number(account.accountNumber):
-            # Account Error
-            validation_errors.append(f"ERROR READING DATA - Account number {account.accountNumber} is invalid.")
-
-        #if valid.validate_currency_amount(account.balance) == False:
-            # Balance Error
-            validation_errors.append(f"ERROR READING DATA - Balance for account {account.accountNumber} is invalid.")
-
-    if validation_errors:
-        # Show errors to user
-        for error in validation_errors:
-            flash(error, 'error')
-            print(error)
-        # redirect to error page where flashed messages are displayed.
-        return render_template('error.html')
-
-    return render_template('customerHome.html', account_list=account_array,
-                            username=session.get('username'))
-
-@app.route('/tellerHome')
+@app.route('/teller')
 def tellerDashboard():
     """Render the dashboard for logged-in Tellers."""
     if 'user_id' not in session:
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
-    # Fetch user accounts
-    account_array = user_manager.get_database().get_user_accounts(session.get('user_id'))
-    # Initialize a list for error messages
-    validation_errors = []
-    valid = InputValidator()
+    if session.get('role_id') == '3': # Teller or Admin only
+        flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
+        return redirect('/')
+    return render_template('tellerHome.html', username=session.get('username'))
 
-    # Iterate through each account and validate
-    for account in account_array:
+@app.route('/admin')
+def adminDashboard():
+    """Render the dashboard for logged-in Admin."""
+    if 'user_id' not in session:
+        flash('You must be logged in to view this page', 'error')
+        return redirect('/login')
+    if session.get('role_id') != '1': # Admin only
+        flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
+        return redirect('/')
+    return render_template('admin_home.html', username=session.get('username'))
 
-        if not valid.validate_account_number(account.accountNumber):
-            # Account Error
-            validation_errors.append(f"ERROR READING DATA - Account number {account.accountNumber} is invalid.")
-
-        #if valid.validate_currency_amount(account.balance) == False:
-            # Balance Error
-            validation_errors.append(f"ERROR READING DATA - Balance for account {account.accountNumber} is invalid.")
-
-    if validation_errors:
-        # Show errors to user
-        for error in validation_errors:
-            flash(error, 'error')
-            print(error)
-        # redirect to error page where flashed messages are displayed.
-        return render_template('error.html')
-
-    return render_template('tellerHome.html', account_list=account_array,
-                            username=session.get('username'))
-
-@app.route('/teller/account-lookup', methods=['GET', 'POST'])
+@app.route('/account-lookup', methods=['GET', 'POST'])
 def teller_account_lookup():
     '''Render the teller account lookup'''
-    if 'user_id' not in session or session.get('role_id') != 2: # Tellers only 
-        flash('Access Denied, Teller login credentials required, beginning self destruct', 'error')
+    if 'user_id' not in session:
+        flash('You must be logged in to view this page', 'error')
         return redirect('/login')
+    if session.get('role_id') == '3': # Tellers and Admin only
+        flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
+        return redirect('/')
     
     account_info_list = []
     
@@ -283,12 +240,15 @@ def teller_account_lookup():
 
     return render_template('teller_account_lookup.html', accounts = account_info_list, usr_id = usr_id)
 
-@app.route('/teller/account/<usr_id>/<int:account_index>')
+@app.route('/account/<usr_id>/<int:account_index>')
 def teller_view_account(usr_id, account_index):
     """Allows tellers to view a specific customer's account."""
-    if not session.get('user_id') or session.get('role_id') != 2:
-        flash('Access denied. Teller login required.', 'error')
+    if 'user_id' not in session:
+        flash('You must be logged in to view this page', 'error')
         return redirect('/login')
+    if session.get('role_id') == '3':  # Tellers and Admin only
+        flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
+        return redirect('/')
     
     try:
         account_info = user_manager.get_user_account_info_from_index(usr_id, account_index)
@@ -314,90 +274,6 @@ def teller_view_account(usr_id, account_index):
         raise
     return render_template('error.html')
 
-@app.route('/teller/deposit/<usr_id>/<int:account_index>', methods=['GET', 'POST'])
-def teller_deposit(usr_id, account_index):
-    if 'user_id' not in session or session.get('role_id') != 2:
-        flash("Access denied. Teller login required.", 'error')
-        return redirect('/login')
-
-    account = user_manager.get_user_account_info_from_index(usr_id, account_index)
-
-    if request.method == 'POST':
-        amount = float(request.form.get('amount'))
-        if amount <= 0:
-            flash("Invalid amount.", "error")
-        else:
-            db = user_manager.get_database()
-            db.deposit_to_account(account.accountNumber, amount)
-            flash(f"${amount} deposited to account {account.accountNumber}.", "success")
-            return redirect(f'/teller/account/{usr_id}/{account_index}')
-
-    return render_template('teller_deposit.html', account=account, usr_id=usr_id, index=account_index)
-
-@app.route('/teller/withdraw/<usr_id>/<int:account_index>', methods=['GET', 'POST'])
-def teller_withdraw(usr_id, account_index):
-    if 'user_id' not in session or session.get('role_id') != 2:
-        flash("Access denied. Teller login required.", 'error')
-        return redirect('/login')
-
-    account = user_manager.get_user_account_info_from_index(usr_id, account_index)
-
-    if request.method == 'POST':
-        amount = float(request.form.get('amount'))
-        if amount <= 0 or amount > account.balance:
-            flash("Invalid or insufficient funds.", "error")
-        else:
-            db = user_manager.get_database()
-            db.withdraw_from_account(account.accountNumber, amount)
-            
-            flash(f"${amount} withdrawn from account {account.accountNumber}.", "success")
-            return redirect(f'/teller/account/{usr_id}/{account_index}')
-
-    return render_template('teller_withdraw.html', account=account, usr_id=usr_id, index=account_index)
-
-@app.route('/teller/transfer/<usr_id>/<int:account_index>', methods=['GET', 'POST'])
-def teller_transfer(usr_id, account_index):
-    """Allows teller to transfer funds from a user's account."""
-    if 'user_id' not in session or session.get('role_id') != 2:
-        flash('Access denied. Teller login required.', 'error')
-        return redirect('/login')
-
-    try:
-        from_account = user_manager.get_user_account_info_from_index(usr_id, account_index)
-        from_account_id = from_account.accountNumber  # This is the real ID used in the DB
-    except Exception as e:
-        logging.error(f"Account lookup failed for user {usr_id} at index {account_index}: {e}")
-        flash("Account lookup failed. Please verify the account information.", 'error')
-        return render_template("error.html")
-
-    if request.method == 'POST':
-        to_account_number = request.form.get('toAccountId')
-
-        try:
-            amount = float(request.form.get('amount'))
-        except (ValueError, TypeError):
-            flash("Invalid amount entered.", 'error')
-            return render_template("teller_transfer.html", usr_id=usr_id, index=account_index)
-
-        logging.info(f"[DEBUG] Teller transfer request: from_user={usr_id}, "
-                     f"from_account_id={from_account_id}, to_account={to_account_number}, amount={amount}")
-
-        result = user_manager.transfer_funds_by_account_number(
-            user_id=usr_id,
-            from_account_id=from_account_id,
-            to_account_id=to_account_number,
-            amount=amount
-        )
-
-        if result:
-            for error in result:
-                flash(error, 'error')
-        else:
-            flash(f"Successfully transferred ${amount:.2f} to account {to_account_number}.", 'success')
-            return redirect(f"/teller/account/{usr_id}/{account_index}")
-
-    return render_template("teller_transfer.html", usr_id=usr_id, index=account_index)
-
 @app.route('/register', methods=['GET', 'POST'])
 def signup():
     if request.method == 'GET':
@@ -419,6 +295,13 @@ def signup():
 
 @app.route('/registerTeller', methods=['GET', 'POST'])
 def register_teller():
+    if 'user_id' not in session:
+        flash('You must be logged in to view this page', 'error')
+        return redirect('/login')
+    if session.get('role_id') != '1': # Admin only
+        flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
+        return redirect('/')
+
     if request.method == 'GET':
         return render_template('registerTeller.html')
 
@@ -438,6 +321,13 @@ def register_teller():
 
 @app.route('/registerAdmin', methods=['GET', 'POST'])
 def register_Admin():
+    if 'user_id' not in session:
+        flash('You must be logged in to view this page', 'error')
+        return redirect('/login')
+    if session.get('role_id') != '1': # Admin only
+        flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
+        return redirect('/')
+
     if request.method == 'GET':
         return render_template('registerAdmin.html')
 
@@ -508,6 +398,14 @@ def transfer():
 
 @app.route('/deposit', methods=['GET','POST'])
 def deposit():
+    # LOCKED - TELLER / ADMIN ACCESS
+    if 'user_id' not in session:
+        flash('You must be logged in to view this page', 'error')
+        return redirect('/login')
+    if session.get('role_id') == 3:  # Tellers and Admin only
+        flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
+
+        return redirect('/')
     if request.method == 'GET':
         return render_template('deposit.html')
 
@@ -525,6 +423,13 @@ def deposit():
 
 @app.route('/withdraw', methods=['GET','POST'])
 def withdraw():
+    # LOCKED - TELLER / ADMIN ACCESS
+    if 'user_id' not in session:
+        flash('You must be logged in to view this page', 'error')
+        return redirect('/login')
+    if session.get('role_id') == '3':  # Tellers and Admin only
+        flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
+
     if request.method == 'GET':
         return render_template('withdrawal.html')
 
@@ -617,6 +522,18 @@ def account_details(account_index):
     account_value = account_info.balance
     return render_template('account_details.html', account_number = account_number,
                             account_name = account_name, account_value = account_value)
+
+@app.route('/logs')
+def logs():
+    if 'user_id' not in session:
+        flash('You must be logged in to view this page', 'error')
+        return redirect('/login')
+    if session.get('role_id') != '1': # Admin only
+        flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
+        return redirect('/')
+
+    log_list = user_manager.get_database().get_audit_logs()
+    return render_template('log_browser.html', log_list = log_list)
 
 @app.route('/test/get_verification_code/<email>')
 def test_get_verification_code(email):

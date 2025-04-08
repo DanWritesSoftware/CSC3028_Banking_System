@@ -10,15 +10,13 @@
 
 <div class="header">
     <h1>Evil Banking System</h1>
-    <h4>Welcome, Evil Teller >:3</h4>
-    <h4>{{ username }}</h4>
+    <h4>Welcome, Evil Teller >:3 {{ username }}</h4>
     <div class="headerGrid">
         <div><a href="/logout">Logout</a></div>
         <div><a href="/password-reset">Reset Password</a></div>
-        <div><a href="/teller/account-lookup">Lookup Customer Account</a></div>
     </div>
-
-</div>
+    <br>
+    </div>
 <!-- Display flash messages here -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -31,14 +29,17 @@
             </div>
         {% endif %}
     {% endwith %}
-
-<body>
-    <div class="grid-container">
-        {% for account in account_list %}
-            <div class="grid-item">
-                <a class="buttonClass" href="/account/{{ loop.index - 1 }}"><h1>{{ account.type }}</h1><body>${{ account.balance }}</body></a>
-            </div>
-        {% endfor %}
+    <br>
+    <h1>Actions</h1>
+    <br>
+    <div class="headerGrid">
+        <div><a href="/account-lookup">Lookup Customer Account</a></div>
+        <div><a href="/transfer">Transfer for Customer</a></div>
+        <div><a href="/deposit">Deposit From Cash To Customer Account</a></div>
+        <div><a href="/withdraw">Withdraw Cash From Customer Account</a></div>
     </div>
-</body>
+
+
+
+
 </html>

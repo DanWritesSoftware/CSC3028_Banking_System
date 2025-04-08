@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
+
+    <title>Logs</title>
+    <link rel="stylesheet" href="{{url_for('static', filename='evilStyle.css') }}">
+
+</head>
+<body>
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Operation</th>
+                <th>Table Name</th>
+                <th>Old Value</th>
+                <th>New Value</th>
+                <th>Changed At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in log_list %}
+            <tr>
+                <td>{{ log.ID }}</td>
+                <td>{{ log.Operation }}</td>
+                <td>{{ log.TableName }}</td>
+                <td>{{ log.oldValue }}</td>
+                <td>{{ log.newValue }}</td>
+                <td>{{ log.ChangedAt }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

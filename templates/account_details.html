@@ -34,12 +34,6 @@
     <h1>Value: ${{ account_value }}</h1>
 </div>
 
-<div style="margin-top: 20px;">
-    <a href="/teller/account-lookup" class="actionButton">← Back to Account Lookup</a>
-</div>
-
-<a href="{{ url_for('teller_transfer', usr_id=usr_id, account_index=index) }}" class="actionButton">Transfer</a>
-
 {% if session.get('role_id') == 2 and usr_id is defined and index is defined %}
     <div class="account-actions">
         <a href="/teller/deposit/{{ usr_id }}/{{ index }}" class="actionButton">Deposit</a>

@@ -11,7 +11,7 @@
         <h1>Evil Banking System</h1>
         <h4>Welcome, Evil Teller >:3 {{ session.username }}</h4>
         <div class="headerGrid">
-            <div><a href="/tellerHome">Back</a></div>
+            <div><a href="/">Back</a></div>
             <div><a href="/logout">Logout</a></div>
         </div>
     </div>
@@ -42,13 +42,13 @@
                 <p><strong>Name:</strong> {{ account.type }}</p>
                 <p><strong>Number:</strong> {{ account.number }}</p>
                 <p><strong>Balance:</strong> ${{ account.balance }}</p>
-                <a class="buttonClass" href="/teller/account/{{ usr_id }}/{{ account.index }}">View</a>
+                <a class="smallButtonClass" href="/account/{{ usr_id }}/{{ account.index }}">View</a>
 
             </div>
         {% endfor %}
 
         <div style="margin-top: 20px;">
-            <a href="/tellerHome" class="buttonClass">← Back to Teller Home</a>
+            <a href="/" class="buttonClass">← Back to Home</a>
         </div>
         
     {% endif %}

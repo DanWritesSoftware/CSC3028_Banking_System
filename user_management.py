@@ -24,7 +24,7 @@ import os
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Database and validation instances
-db_manager = Database("QuarantineBankingDatabase.db")
+db_manager = Database("BankingData.db")
 input_validator = InputValidator()
 
 # Constants
