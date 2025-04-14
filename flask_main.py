@@ -154,9 +154,9 @@ def dashboard():
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
     """Handle Teller / Admin Accounts"""
-    if session["role_id"] == '1':
+    if session["role_id"] == 1:
         return redirect('/admin')
-    if session["role_id"] == '2':
+    if session["role_id"] == 2:
         return redirect('/teller')
     # else, render user account
 
@@ -194,7 +194,7 @@ def tellerDashboard():
     if 'user_id' not in session:
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
-    if session.get('role_id') == '3': # Teller or Admin only
+    if session.get('role_id') == 3:
         flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
         return redirect('/')
     return render_template('tellerHome.html', username=session.get('username'))
@@ -205,7 +205,7 @@ def adminDashboard():
     if 'user_id' not in session:
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
-    if session.get('role_id') != '1': # Admin only
+    if session.get('role_id') != 1:
         flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
         return redirect('/')
     return render_template('admin_home.html', username=session.get('username'))
@@ -216,7 +216,7 @@ def teller_account_lookup():
     if 'user_id' not in session:
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
-    if session.get('role_id') == '3': # Tellers and Admin only
+    if session.get('role_id') == 3:
         flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
         return redirect('/')
     
@@ -246,7 +246,7 @@ def teller_view_account(usr_id, account_index):
     if 'user_id' not in session:
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
-    if session.get('role_id') == '3':  # Tellers and Admin only
+    if session.get('role_id') == 3:
         flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
         return redirect('/')
     
@@ -298,7 +298,7 @@ def register_teller():
     if 'user_id' not in session:
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
-    if session.get('role_id') != '1': # Admin only
+    if session.get('role_id') != 1: # Admin only
         flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
         return redirect('/')
 
@@ -324,7 +324,7 @@ def register_Admin():
     if 'user_id' not in session:
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
-    if session.get('role_id') != '1': # Admin only
+    if session.get('role_id') != 1: # Admin only
         flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
         return redirect('/')
 
@@ -402,7 +402,7 @@ def deposit():
     if 'user_id' not in session:
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
-    if session.get('role_id') == 3:  # Tellers and Admin only
+    if session.get('role_id') == 3:
         flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
 
         return redirect('/')
@@ -427,7 +427,7 @@ def withdraw():
     if 'user_id' not in session:
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
-    if session.get('role_id') == '3':  # Tellers and Admin only
+    if session.get('role_id') == 3:
         flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
 
     if request.method == 'GET':
@@ -528,7 +528,7 @@ def logs():
     if 'user_id' not in session:
         flash('You must be logged in to view this page', 'error')
         return redirect('/login')
-    if session.get('role_id') != '1': # Admin only
+    if session.get('role_id') != 1:
         flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
         return redirect('/')
 
