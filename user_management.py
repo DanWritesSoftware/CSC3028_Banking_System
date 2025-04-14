@@ -12,16 +12,19 @@ import socket
 from email.message import EmailMessage
 from typing import Optional, Dict
 from Account import Account
+from flask import session
 
 import bcrypt
 from database_handler import Database
 from input_validator import InputValidator
 
+import os 
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Database and validation instances
-db_manager = Database("BankingDatabase.db")
+db_manager = Database("BankingData.db")
 input_validator = InputValidator()
 
 # Constants
@@ -30,7 +33,7 @@ CODE_EXPIRATION = 600  # 10 minutes in seconds
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_FROM = "csc3028.evil.banking.system"
-EMAIL_PASSWORD = "doldkejwyvqplril"
+# EMAIL PASSWORD STORED IN TXT FILE - SEE get_gmail_password
 
 class UserManager:
     """Handles user authentication, registration, and 2FA."""
@@ -52,8 +55,7 @@ class UserManager:
             return {"account_number": account_number}
         return {}
 
-
-    def sign_up(self, username: str, email: str, password: str, confirm_password: str) -> str:
+    def sign_up_customer(self, username: str, email: str, password: str, confirm_password: str) -> str:
         """Registers a new user with hashed password security."""
         if not input_validator.validate_username(username):
             logging.warning("Invalid username provided.")
@@ -75,9 +77,61 @@ class UserManager:
                 break
 
         hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        db_manager.create_user(user_id, username, email, hashed_password)
+        db_manager.create_user(user_id, username, email, hashed_password, 3)
         logging.info("User %s registered successfully.", username)
         return "User registered successfully!"
+
+    def sign_up_teller(self, username: str, email: str, password: str, confirm_password: str) -> str:
+        """Registers a new user with hashed password security."""
+        if not input_validator.validate_username(username):
+            logging.warning("Invalid username provided.")
+            return "Invalid username, please try again."
+        if not input_validator.validate_email(email):
+            logging.warning("Invalid email format.")
+            return "Invalid email, please try again."
+        if not input_validator.validate_password_complexity(password):
+            logging.warning("Password does not meet complexity requirements.")
+            return "Password not complex enough, please try again."
+        if password != confirm_password:
+            return "Passwords do not match."
+        if db_manager.email_in_use(email):
+            return "Email address already in use!"
+
+        while True:
+            user_id = ''.join(random.choices('0123456789', k=USER_ID_LENGTH))
+            if not db_manager.user_id_in_use(user_id):
+                break
+
+        hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        db_manager.create_user(user_id, username, email, hashed_password, 2)
+        logging.info("User %s registered successfully.", username)
+        return "Teller registered successfully!"
+
+    def sign_up_admin(self, username: str, email: str, password: str, confirm_password: str) -> str:
+        """Registers a new user with hashed password security."""
+        if not input_validator.validate_username(username):
+            logging.warning("Invalid username provided.")
+            return "Invalid username, please try again."
+        if not input_validator.validate_email(email):
+            logging.warning("Invalid email format.")
+            return "Invalid email, please try again."
+        if not input_validator.validate_password_complexity(password):
+            logging.warning("Password does not meet complexity requirements.")
+            return "Password not complex enough, please try again."
+        if password != confirm_password:
+            return "Passwords do not match."
+        if db_manager.email_in_use(email):
+            return "Email address already in use!"
+
+        while True:
+            user_id = ''.join(random.choices('0123456789', k=USER_ID_LENGTH))
+            if not db_manager.user_id_in_use(user_id):
+                break
+
+        hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        db_manager.create_user(user_id, username, email, hashed_password, 1)
+        logging.info("User %s registered successfully.", username)
+        return "Administrator registered successfully!"
 
     def login(self, username: str, password: str) -> Optional[Dict]:
         """Initiates authentication and triggers 2FA email."""
@@ -114,7 +168,18 @@ class UserManager:
 
         if stored_data['code'] == code:
             del self._verification_codes[email]
-            return db_manager.get_user_by_email(email)
+
+            user_data = db_manager.get_user_by_email(email)
+
+            if user_data:
+                session['username'] = user_data['usrName']
+                session['user_id'] = user_data['usrID']
+                session['email'] = user_data['email']
+                session['role_id'] = user_data['RoleID']
+
+                logging.info("User %s logged in with RoleID %s", user_data['usrName'], user_data['RoleID'])
+
+                return user_data
 
         logging.warning("Invalid code for %s", email)
         return None
@@ -126,6 +191,10 @@ class UserManager:
             'code': code,
             'expires': time.time() + CODE_EXPIRATION
         }
+
+        if os.getenv("FLASK_ENV", "").lower() in ["testing", "development"]:
+            print(f"[DEV MODE] 2FA code for {email}: {code}")  # Force print for visibility
+            logging.warning(f"[DEV MODE] 2FA code for {email}: {code}")
         return code
 
     def _send_verification_email(self, email: str, code: str) -> None:
@@ -139,7 +208,7 @@ class UserManager:
         try:
             with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=60) as server:
                 server.starttls()
-                server.login(EMAIL_FROM, EMAIL_PASSWORD)
+                server.login(EMAIL_FROM, self.get_gmail_password())
                 server.send_message(msg)
             logging.info("Verification email sent to %s", email)
         except smtplib.SMTPException as e:
@@ -158,7 +227,7 @@ class UserManager:
 
         if not input_validator.validate_password_complexity(new_password):
             return "Password not secure."
-        
+
         # Check if user exists
         user_data = db_manager.get_user_by_username(username)
         if not user_data:
@@ -180,15 +249,72 @@ class UserManager:
         return db_manager
 
     def get_user_account_info_from_index(self, user_id: str, index: int) -> Account:
+        logging.info(f"Attempting to retrieve account at index {index} for user_id={user_id}")
         user_accounts = db_manager.get_user_accounts(user_id)
         try:
             output = user_accounts[index]
+            logging.info(f"Retrieved account: Number={output.accountNumber}, Type={output.type}, Balance={output.balance}")
         except IndexError:
-            print(f"Error: Index {index} is out of bounds for user {user_id}")
+            logging.error(f"Index {index} out of bounds for user {user_id}. Total accounts: {len(user_accounts)}")
+            raise
         except Exception as e:
-            # This handles any other unexpected exceptions
-            print(f"Unexpected error: {e}")
+            logging.exception(f"Unexpected error retrieving account at index {index} for user {user_id}: {str(e)}")
+            raise
 
         return output
 
+    def transfer_funds_by_account_number(self, user_id: str, from_account_id: str, to_account_id: str, amount: float) -> list[str]:
+        """
+        Transfers funds from a user's account (by account number) to another account (also by account number).
+        Returns a list of error messages, or an empty list on success.
+        """
+        if amount <= 0:
+            return ["Error: Transfer amount must be greater than zero."]
 
+        try:
+            user_accounts = db_manager.get_user_accounts(user_id)
+
+            # Find the source account object by account number
+            from_account = None
+            for account in user_accounts:
+                if str(account.accountNumber) == str(from_account_id):
+                    from_account = account
+                    break
+
+            if from_account is None:
+                return ["Error: Source account not found."]
+
+            # Prevent self-transfer
+            if str(from_account.accountNumber) == str(to_account_id):
+                return ["Error: Cannot transfer to the same account."]
+
+            # Withdraw from source account
+            withdraw_result = db_manager.withdraw_from_account(from_account.accountNumber, amount)
+            if withdraw_result:
+                return withdraw_result  # Withdrawal failed
+
+            # Deposit into destination account
+            deposit_result = db_manager.deposit_to_account(to_account_id, amount)
+            if deposit_result:
+                # Rollback the withdrawal
+                db_manager.deposit_to_account(from_account.accountNumber, amount)
+                return deposit_result
+
+            return []  # Success
+
+        except Exception as e:
+            logging.exception(f"Exception during transfer: {str(e)}")
+            return [f"Unexpected error during transfer: {str(e)}"]
+
+    def get_gmail_password(self) -> str:
+        """Get gmail password from text file in directory"""
+        filepath = "gmail_password.txt"
+        try:
+            with open(filepath, 'r', encoding='utf-8') as file:
+                return file.readline().strip()
+        except FileNotFoundError:
+            print(f"PLEASE ENTER GMAIL APP PASSWORD IN {filepath}. IF IT DOESN'T EXIST, CREATE IT.")
+            return ""
+        except Exception as e:
+            print(f"Error reading file: {e}")
+            return ""

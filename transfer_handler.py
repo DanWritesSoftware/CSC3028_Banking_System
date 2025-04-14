@@ -46,10 +46,9 @@ class Transfer:
         if errors:
             return errors
 
-        # Proceed with database operations
-        withdraw_errors = self.database.withdraw_from_account(self.from_id, self.transfer_amount)
-        if withdraw_errors:
-            return withdraw_errors
-
-        deposit_errors = self.database.deposit_to_account(self.to_id, self.transfer_amount)
-        return deposit_errors
+        # Proceed with database operation
+        return self.database.transfer_funds_by_account_number(
+            from_account_id=self.from_id,
+            to_account_id=self.to_id,
+            amount=self.transfer_amount
+        )

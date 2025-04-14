@@ -4,10 +4,16 @@
     <meta charset="UTF-8">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
     <title>Account Details</title>
-</head>
-<a href="/home">back</a>
 
-<link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
+
+{% if session.get('role_id') == 2 %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='evilStyle.css') }}">
+{% else %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% endif %}
+
+</head>
+<body>
 
 <!-- Display flash messages here -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -22,11 +28,19 @@
         {% endif %}
     {% endwith %}
 
-<h1>Account Name: {{ account_name }}</h1>
-<h1>Account Number: {{ account_number }}</h1>
-<h1>Value: ${{ account_value }}</h1>
+<div class="account-details">
+    <h1>Account Name: {{ account_name }}</h1>
+    <h1>Account Number: {{ account_number }}</h1>
+    <h1>Value: ${{ account_value }}</h1>
+</div>
 
-<body>
+{% if session.get('role_id') == 2 and usr_id is defined and index is defined %}
+    <div class="account-actions">
+        <a href="/teller/deposit/{{ usr_id }}/{{ index }}" class="actionButton">Deposit</a>
+        <a href="/teller/withdraw/{{ usr_id }}/{{ index }}" class="actionButton">Withdraw</a>
+        <a href="/teller/transfer/{{ usr_id }}/{{ index }}" class="actionButton">Transfer</a>
+    </div>
+{% endif %}
 
 </body>
 </html>

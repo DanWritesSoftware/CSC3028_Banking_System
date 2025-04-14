@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <title>Lookup Customer Accounts</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='evilStyle.css') }}">
+</head>
+<body>
+    <div class="header">
+        <h1>Evil Banking System</h1>
+        <h4>Welcome, Evil Teller >:3 {{ session.username }}</h4>
+        <div class="headerGrid">
+            <div><a href="/">Back</a></div>
+            <div><a href="/logout">Logout</a></div>
+        </div>
+    </div>
+
+    <form method="POST" class="form-inline">
+        <label for="usr_id">Enter Customer usrID:</label>
+        <input type="text" name="usr_id" id="usr_id" required>
+        <button type="submit">Lookup</button>
+    </form>
+
+    <!-- Display flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashed-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        <h4>{{ message }}</h4>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% if accounts %}
+        <h2>Accounts Found:</h2>
+        {% for account in accounts %}
+            <div class="grid-item">
+                <p><strong>Name:</strong> {{ account.type }}</p>
+                <p><strong>Number:</strong> {{ account.number }}</p>
+                <p><strong>Balance:</strong> ${{ account.balance }}</p>
+                <a class="smallButtonClass" href="/account/{{ usr_id }}/{{ account.index }}">View</a>
+
+            </div>
+        {% endfor %}
+
+        <div style="margin-top: 20px;">
+            <a href="/" class="buttonClass">← Back to Home</a>
+        </div>
+        
+    {% endif %}
+</body>
+</html>
