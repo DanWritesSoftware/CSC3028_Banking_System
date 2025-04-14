@@ -6,6 +6,8 @@ This script initializes and runs the Flask banking application.
 import os
 import time
 import random
+import logging
+from functools import wraps
 from flask import Flask, render_template, request, redirect, flash, session
 from flask_session import Session
 from user_management import UserManager
@@ -13,88 +15,84 @@ from session_manager import SessionManager
 from transfer_handler import Transfer
 from deposit_handler import Deposit
 from withdrawal_handler import Withdrawal
+from memory_manager import MemoryManager
 from input_validator import InputValidator
-from log_manager import logging
 
-'''# Initialize Flask app
+# Initialize Flask Application
 app = Flask(__name__)
 
-logging.info("Logging system initialized.")
-'''
-
-app = Flask(__name__)
-app.config["TESTING"] = True
-logging.info("Logging system initialized.")
-
-
-'''
-# Configure environment-specific settings
-if os.getenv('FLASK_ENV') == 'testing':
-    # Testing configurations
-    app.config.update(
-        TESTING=True,
-        WTF_CSRF_ENABLED=False,
-        SECRET_KEY="test-secret-key",
-        SESSION_TYPE="filesystem"
-    )
-else:
-    # Production configurations
-    app.config.update(
-        SECRET_KEY=os.getenv("SECRET_KEY", "default-secret-key"),
-        SESSION_TYPE="filesystem"
-    )
-    '''
-
+# Environment Configuration
 env = os.getenv('FLASK_ENV', '').lower()
+app.config.update(
+    SECRET_KEY=os.getenv("SECRET_KEY", "default-secret-key"),
+    SESSION_TYPE="filesystem",
+    TESTING=(env == 'testing'),
+    WTF_CSRF_ENABLED=(env != 'testing'),
+    DEBUG=(env == 'development')
+)
 
-if env == 'testing':
-    app.config.update(
-        TESTING=True,
-        WTF_CSRF_ENABLED=False,
-        SECRET_KEY="test-secret-key",
-        SESSION_TYPE="filesystem"
-    )
-elif env == 'development':
-    app.config.update(
-        DEBUG=True,
-        TESTING = True,
-        SECRET_KEY="dev-secret-key",
-        SESSION_TYPE="filesystem"
-    )
-else:
-    app.config.update(
-        SECRET_KEY=os.getenv("SECRET_KEY", "default-secret-key"),
-        SESSION_TYPE="filesystem"
-    )
-
-
-# Initialize session extension
+# Initialize Extensions
 Session(app)
 
-# Initialize application components
+# Application Components
 session_manager = SessionManager()
 user_manager = UserManager()
-
-# To hold failed login attempts
+memory_manager = MemoryManager()
 failed_login_attempts = {}
 
+# RBAC Configuration
+ROLES = {
+    1: 'admin',
+    2: 'teller',
+    3: 'customer'
+}
+
+def requires_role(allowed_roles):
+    """Role-Based Access Control Decorator"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if 'user_id' not in session:
+                flash('Authentication required', 'error')
+                return redirect('/login')
+                
+            user_role = session.get('role_id')
+            if user_role not in allowed_roles:
+                flash('Insufficient privileges', 'error')
+                logging.warning(f"Unauthorized access attempt by {session.get('username')} to {request.path}")
+                return redirect('/home')
+                
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
 @app.before_request
-def log_request_info():
-    logging.info(f"Incoming request: {request.method} {request.url} from {request.remote_addr}")
+def init_memory_tracking():
+    """Initialize memory tracking for each request"""
+    memory_manager.register_object(f"request_{request.method}_{request.path}", request)
+    memory_manager.baseline = memory_manager._get_memory_usage()
 
 @app.after_request
-def log_response_info(response):
-    logging.info(f"Response status: {response.status_code} for {request.method} {request.url}")
+def check_memory_leaks(response):
+    """Check for memory leaks after each request"""
+    if memory_manager.check_for_leaks():
+        logging.error("Potential memory leak detected after %s %s", 
+                     request.method, request.path)
+    memory_manager.cleanup()
     return response
 
 @app.route('/')
 def default():
-    """Redirect to the home page."""
+    """Root redirect based on authentication"""
+    if not session_manager.is_authenticated():
+        return redirect('/login')
     return redirect('/home')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Handle user login."""
+    """User login with memory tracking"""
+    memory_manager.register_object("login_processor", locals())
+    
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -104,20 +102,17 @@ def login():
             session['2fa_email'] = result['email']
             return redirect('/verify-2fa')
         if result:
-            logging.info(f"Successful login attempt for user: {username}")
             failed_login_attempts.pop(username, None)
+            return redirect('/home')
         else:
-            logging.warning(f"Failed login attempt for user: {username} from {request.remote_addr}")
-            failed_login_attempts[username] = failed_login_attempts.get(username, 0) + 1
-            flash('Invalid credentials' if result is None else '2FA required', 'error')
-
-            if failed_login_attempts[username] >= 3:
-                logging.error(f"SECURITY INCIDENT: More than three failed login attenpts for user: {username} from {request.remote_addr}")
+            handle_failed_login(username)
+            
+    memory_manager.check_for_leaks()
     return render_template('login.html')
 
 @app.route('/verify-2fa', methods=['GET', 'POST'])
 def verify_2fa():
-    """Handle 2FA verification."""
+    """Two-Factor Authentication Verification"""
     if '2fa_email' not in session:
         flash('Authentication session expired', 'error')
         return redirect('/login')
@@ -132,7 +127,6 @@ def verify_2fa():
             session['username'] = user['usrName']
             session['role_id'] = user['RoleID']
             session.pop('2fa_email', None)
-
             return redirect('/home')
 
         flash('Invalid verification code', 'error')
@@ -140,88 +134,61 @@ def verify_2fa():
 
 @app.route('/logout')
 def logout():
-    """Clear session and logout user."""
-    #session.clear()
+    """Session termination endpoint"""
     username = session.get('username', 'unknown')
     logging.info(f"User {username} logged out.")
     session.clear()
     return redirect('/')
 
 @app.route('/home')
-def dashboard():
-    """Render the dashboard for logged-in users."""
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-    """Handle Teller / Admin Accounts"""
-    if session["role_id"] == 1:
-        return redirect('/admin')
-    if session["role_id"] == 2:
-        return redirect('/teller')
-    # else, render user account
-
-    # Fetch user accounts
-    account_array = user_manager.get_database().get_user_accounts(session.get('user_id'))
-    # Initialize a list for error messages
-    validation_errors = []
-    valid = InputValidator()
-
-    # Iterate through each account and validate
-    for account in account_array:
-
-        if not valid.validate_account_number(account.accountNumber):
-            # Account Error
-            validation_errors.append(f"ERROR READING DATA - Account number {account.accountNumber} is invalid.")
-
-        #if valid.validate_currency_amount(account.balance) == False:
-            # Balance Error
-            validation_errors.append(f"ERROR READING DATA - Balance for account {account.accountNumber} is invalid.")
-
-    if validation_errors:
-        # Show errors to user
-        for error in validation_errors:
-            flash(error, 'error')
-            print(error)
-        # redirect to error page where flashed messages are displayed.
+@requires_role([3])
+def customer_dashboard():
+    """Customer dashboard with memory validation"""
+    try:
+        account_array = user_manager.get_database().get_user_accounts(session.get('user_id'))
+        memory_manager.register_object("customer_accounts", account_array)
+        validation_errors = validate_accounts(account_array)
+        
+        if validation_errors:
+            for error in validation_errors:
+                flash(error, 'error')
+            return render_template('error.html')
+            
+        return render_template('home.html', 
+                            account_list=account_array,
+                            username=session.get('username'))
+    except Exception as e:
+        memory_manager.cleanup()
+        logging.error(f"Memory error in customer dashboard: {str(e)}")
         return render_template('error.html')
 
-    return render_template('home.html', account_list=account_array,
-                            username=session.get('username'))
-
 @app.route('/teller')
-def tellerDashboard():
-    """Render the dashboard for logged-in Tellers."""
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-    if session.get('role_id') == 3:
-        flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
-        return redirect('/')
-    return render_template('tellerHome.html', username=session.get('username'))
+@requires_role([1, 2])
+def teller_dashboard():
+    """Teller dashboard with memory checks"""
+    memory_manager.register_object("teller_dashboard", session)
+    return render_template('tellerHome.html', 
+                         username=session.get('username'))
 
 @app.route('/admin')
-def adminDashboard():
-    """Render the dashboard for logged-in Admin."""
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-    if session.get('role_id') != 1:
-        flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
-        return redirect('/')
-    return render_template('admin_home.html', username=session.get('username'))
+@requires_role([1])
+def admin_dashboard():
+    """Admin dashboard with resource monitoring"""
+    memory_manager.register_object("admin_dashboard", session)
+    log_list = user_manager.get_database().get_audit_logs()
+    return render_template('admin_home.html', 
+                         username=session.get('username'),
+                         log_list=log_list)
 
+# --------------------------
+# Account Management Routes
+# --------------------------
 @app.route('/account-lookup', methods=['GET', 'POST'])
+@requires_role([1, 2])
 def teller_account_lookup():
-    '''Render the teller account lookup'''
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-    if session.get('role_id') == 3:
-        flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
-        return redirect('/')
-    
+    """Account lookup functionality for tellers"""
+    memory_manager.register_object("account_lookup", locals())
     account_info_list = []
-    
     usr_id = None
 
     if request.method == 'POST':
@@ -230,56 +197,111 @@ def teller_account_lookup():
             accounts = user_manager.get_database().get_user_accounts(usr_id)
             for i, acc in enumerate(accounts):
                 account_info_list.append({
-                'index': i,
-                'type': acc.type,
-                'number': acc.accountNumber,
-                'balance': acc.balance
+                    'index': i,
+                    'type': acc.type,
+                    'number': acc.accountNumber,
+                    'balance': acc.balance
                 })
+            memory_manager.register_object("found_accounts", account_info_list)
         except Exception as e:
             flash(f"Error retrieving accounts: {str(e)}", 'error')
 
-    return render_template('teller_account_lookup.html', accounts = account_info_list, usr_id = usr_id)
+    return render_template('teller_account_lookup.html', 
+                         accounts=account_info_list, 
+                         usr_id=usr_id)
 
 @app.route('/account/<usr_id>/<int:account_index>')
+@requires_role([1, 2])
 def teller_view_account(usr_id, account_index):
-    """Allows tellers to view a specific customer's account."""
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-    if session.get('role_id') == 3:
-        flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
-        return redirect('/')
-    
+    """Account detail view for tellers"""
     try:
         account_info = user_manager.get_user_account_info_from_index(usr_id, account_index)
-            # DEBUG: Confirm values before rendering the template
-        print(f"[DEBUG] Rendering account_details.html with:")
-        print(f"        usr_id = {usr_id}")
-        print(f"        account_index = {account_index}")
-        print(f"        account_number = {account_info.accountNumber}")
-        print(f"        account_name = {account_info.type}")
-        print(f"        account_value = {account_info.balance}")
-
+        memory_manager.register_object("viewed_account", account_info)
+        
         return render_template('account_details.html',
-                               account_number=account_info.accountNumber,
-                               account_name=account_info.type,
-                               account_value=account_info.balance,
-                               usr_id = usr_id,
-                               index=account_index
-                               )
+                             account_number=account_info.accountNumber,
+                             account_name=account_info.type,
+                             account_value=account_info.balance,
+                             usr_id=usr_id,
+                             index=account_index)
     except IndexError:
-        flash('That account index is invalid for this user.', 'error')
+        flash('Invalid account index', 'error')
     except Exception as e:
         flash(f"Error retrieving account: {str(e)}", 'error')
-        raise
     return render_template('error.html')
 
+@app.route('/transfer', methods=['GET','POST'])
+@requires_role([1, 2, 3])
+def transfer():
+    """Funds transfer with resource tracking"""
+    memory_manager.register_object("transfer_handler", locals())
+    
+    if request.method == 'POST':
+        from_acc = request.form['fromAccountId']
+        to_acc = request.form['toAccountId']
+        amount = float(request.form['transferAmount'])
+        
+        transfer_obj = Transfer(from_acc, to_acc, amount, user_manager.get_database())
+        memory_manager.register_object("transfer_instance", transfer_obj)
+        
+        errors = transfer_obj.try_transfer()
+        handle_transfer_errors(errors, from_acc, to_acc, amount)
+        
+        memory_manager.check_for_leaks()
+        return redirect('/home')
+        
+    return render_template('transfer.html')
+
+@app.route('/deposit', methods=['GET','POST'])
+@requires_role([1, 2])
+def deposit():
+    """Deposit handling with memory checks"""
+    memory_manager.register_object("deposit_handler", locals())
+    
+    if request.method == 'POST':
+        account_id = request.form['accountId']
+        amount = float(request.form['depositAmount'])
+        
+        deposit_obj = Deposit(account_id, amount, user_manager.get_database())
+        memory_manager.register_object("deposit_instance", deposit_obj)
+        
+        errors = deposit_obj.try_deposit()
+        handle_deposit_errors(errors, account_id, amount)
+        
+        memory_manager.check_for_leaks()
+        return redirect('/home')
+        
+    return render_template('deposit.html')
+
+@app.route('/withdraw', methods=['GET','POST'])
+@requires_role([1, 2])
+def withdraw():
+    """Withdrawal handling with resource management"""
+    memory_manager.register_object("withdraw_handler", locals())
+    
+    if request.method == 'POST':
+        account_id = request.form['accountId']
+        amount = float(request.form['withdrawAmount'])
+        
+        withdrawal_obj = Withdrawal(account_id, amount, user_manager.get_database())
+        memory_manager.register_object("withdrawal_instance", withdrawal_obj)
+        
+        errors = withdrawal_obj.try_withdrawal()
+        handle_withdrawal_errors(errors, account_id, amount)
+        
+        memory_manager.check_for_leaks()
+        return redirect('/home')
+        
+    return render_template('withdrawal.html')
+
+# --------------------------
+# User Management Routes
+# --------------------------
 @app.route('/register', methods=['GET', 'POST'])
 def signup():
-    if request.method == 'GET':
-        return render_template('register.html')
-
-    #Handle user registration.
+    """Customer registration endpoint"""
+    memory_manager.register_object("signup_handler", locals())
+    
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
@@ -287,25 +309,19 @@ def signup():
         confirm_password = request.form.get('confirmPassword')
 
         result = user_manager.sign_up_customer(username, email, password, confirm_password)
-        if result == "User registered successfully!":
+        if "successfully" in result.lower():
             flash(result, 'success')
             return redirect('/login')
         flash(result, 'error')
+    
     return render_template('register.html')
 
 @app.route('/registerTeller', methods=['GET', 'POST'])
+@requires_role([1])
 def register_teller():
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-    if session.get('role_id') != 1: # Admin only
-        flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
-        return redirect('/')
-
-    if request.method == 'GET':
-        return render_template('registerTeller.html')
-
-    #Handle teller registration.
+    """Teller registration endpoint"""
+    memory_manager.register_object("teller_registration", locals())
+    
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
@@ -313,25 +329,19 @@ def register_teller():
         confirm_password = request.form.get('confirmPassword')
 
         result = user_manager.sign_up_teller(username, email, password, confirm_password)
-        if result == "Teller registered successfully!":
+        if "successfully" in result.lower():
             flash(result, 'success')
-            return redirect('/login')
+            return redirect('/admin')
         flash(result, 'error')
+    
     return render_template('registerTeller.html')
 
 @app.route('/registerAdmin', methods=['GET', 'POST'])
-def register_Admin():
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-    if session.get('role_id') != 1: # Admin only
-        flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
-        return redirect('/')
-
-    if request.method == 'GET':
-        return render_template('registerAdmin.html')
-
-    #Handle teller registration.
+@requires_role([1])
+def register_admin():
+    """Admin registration endpoint"""
+    memory_manager.register_object("admin_registration", locals())
+    
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
@@ -339,24 +349,19 @@ def register_Admin():
         confirm_password = request.form.get('confirmPassword')
 
         result = user_manager.sign_up_admin(username, email, password, confirm_password)
-        if result == "Administrator registered successfully!":
+        if "successfully" in result.lower():
             flash(result, 'success')
-            return redirect('/login')
+            return redirect('/admin')
         flash(result, 'error')
+    
     return render_template('registerAdmin.html')
 
 @app.route('/password-reset', methods=['GET', 'POST'])
+@requires_role([1, 2, 3])
 def password_reset():
-    # Handle user not logged in
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-
-    if request.method == 'GET':
-        # Load Form
-        return render_template('passwordReset.html')
-
-    # Handle password reset requests.
+    """Password reset functionality"""
+    memory_manager.register_object("password_reset_handler", locals())
+    
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
@@ -368,184 +373,83 @@ def password_reset():
             flash(result, 'success')
             return redirect('/home')
         flash(result, 'error')
-    return redirect('/password-reset')
+    
+    return render_template('passwordReset.html')
 
-@app.route('/transfer', methods=['GET','POST'])
-def transfer():
-    # Handle user not logged in
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
+@app.route('/system/status')
+@requires_role([1])
+def system_status():
+    """Memory and resource status dashboard"""
+    status = {
+        'memory_usage': memory_manager._get_memory_usage(),
+        'active_objects': len(memory_manager.object_registry),
+        'connections': memory_manager.object_registry.get('database_connections', 0),
+        'failed_logins': sum(failed_login_attempts.values())
+    }
+    return render_template('system_status.html', status=status)
 
-    if request.method == 'GET':
-        return render_template('transfer.html')
+@app.route('/system/cleanup')
+@requires_role([1])
+def system_cleanup():
+    """Manual memory cleanup endpoint"""
+    memory_manager.cleanup()
+    flash("Memory cleanup performed", 'success')
+    return redirect('/system/status')
 
-    if request.method == 'POST':
-        fromAccountID = request.form['fromAccountId']
-        toAccountID = request.form['toAccountId']
-        transferAmount = request.form['transferAmount']
-        t = Transfer(fromAccountID, toAccountID, float(transferAmount), user_manager.get_database())
-        errors = t.try_transfer()
-        if errors:
-            for error in errors:
-                flash(error, 'error')
-                logging.warning(f"Failed transfer attempt by {session['username']} from {fromAccountID} to {toAccountID}: {error}")
-            return redirect('/transfer')
-        else:
-            logging.info(f"User {session['username']} transferred {transferAmount} from {fromAccountID} to {toAccountID}.")
-            flash('Transfer Success!')
-            return redirect('/home')
+def handle_failed_login(username):
+    """Track failed login attempts with memory management"""
+    failed_login_attempts[username] = failed_login_attempts.get(username, 0) + 1
+    flash('Invalid credentials', 'error')
+    
+    if failed_login_attempts[username] >= 3:
+        logging.error("Security alert: Multiple failed logins for %s", username)
+        memory_manager.register_object(f"locked_account_{username}", {
+            'attempts': failed_login_attempts[username],
+            'timestamp': time.time()
+        })
 
-@app.route('/deposit', methods=['GET','POST'])
-def deposit():
-    # LOCKED - TELLER / ADMIN ACCESS
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-    if session.get('role_id') == 3:
-        flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
+def validate_accounts(accounts):
+    """Account validation with input checking"""
+    validator = InputValidator()
+    errors = []
+    for acc in accounts:
+        if not validator.validate_account_number(acc.accountNumber):
+            errors.append(f"Invalid account: {acc.accountNumber}")
+    memory_manager.register_object("validation_errors", errors)
+    return errors
 
-        return redirect('/')
-    if request.method == 'GET':
-        return render_template('deposit.html')
-
-    accountID = request.form['accountId']
-    depositAmount = request.form['depositAmount']
-    d = Deposit(accountID, float(depositAmount), user_manager.get_database())
-    errors = d.try_deposit()
+def handle_transfer_errors(errors, from_acc, to_acc, amount):
+    """Transfer error handling with memory tracking"""
     if errors:
+        memory_manager.register_object("transfer_errors", errors)
         for error in errors:
             flash(error, 'error')
-        return redirect('/deposit')
+        logging.warning("Transfer failed: %s", errors)
     else:
-        flash('Deposit Success!')
-        return redirect('/home')
+        logging.info("Successful transfer: %s from %s to %s", amount, from_acc, to_acc)
+        flash('Transfer successful!', 'success')
 
-@app.route('/withdraw', methods=['GET','POST'])
-def withdraw():
-    # LOCKED - TELLER / ADMIN ACCESS
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-    if session.get('role_id') == 3:
-        flash('Access Denied, Teller or Admin credentials required, beginning self destruct', 'error')
-
-    if request.method == 'GET':
-        return render_template('withdrawal.html')
-
-    accountID = request.form['accountId']
-    withdrawAmount = request.form['withdrawAmount']
-    w = Withdrawal(accountID, float(withdrawAmount), user_manager.get_database())
-    errors = w.try_withdrawal()
+def handle_deposit_errors(errors, account_id, amount):
+    """Deposit error handling with resource management"""
     if errors:
+        memory_manager.register_object("deposit_errors", errors)
         for error in errors:
             flash(error, 'error')
-        return redirect('/withdraw')
+        logging.error("Deposit failed: %s", errors)
     else:
-        flash('Withdrawal Success!')
-        return redirect('/home')
+        logging.info("Successful deposit: %s to %s", amount, account_id)
+        flash('Deposit successful!', 'success')
 
-@app.route('/new', methods = ['POST', 'GET'])
-def new():
-    # Handle user not logged in
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-
-    valid = InputValidator()
-
-    if request.method == 'GET':
-        # Load form
-        return render_template('newAccount.html')
-    if request.method == 'POST':
-        # Get the account name and value from the form
-        account_name = request.form['accountName']
-        account_value = request.form['value']
-
-        # Validate Input
-
-        # Initialize a list for error messages
-        validationErrors = []
-
-        if not valid.validate_username(account_name):
-            # Account name issue
-            validationErrors.append(f"ERROR Account Name {account_name} is invalid. Please keep names between 5 and 20 Characters.")
-
-        try:
-            if not valid.validate_currency_amount(float(account_value)):
-                # Currency issue
-                validationErrors.append(f"ERROR Currency Value {account_value} is invalid. Please include the decimals after the whole number.")
-        except ValueError:
-            # Not a number
-            validationErrors.append(f"ERROR Please Input Digits.")
-
-        if validationErrors:
-            # Flash errors
-            for error in validationErrors:
-                flash(error, 'error')
-                print(error)
-            # reload page to reset form and diaplay flashed errors.
-            return redirect('/new')
-
-        # Generate a new account number
-        random_account = random.randint(1000000000, 9999999999)
-        # Regenerate if in use
-        while user_manager.get_database().user_id_in_use(str(random_account)):
-            randomAccount = random.randint(1000000000, 999999999)
-
-        # Create account in database
-        #db.createAccount(randomAccount,1,accountName,accountValue)
-        user_manager.get_database().create_account(str(random_account),
-                    session.get('user_id'), account_name, float(account_value))
-        flash("Account created successfully!", 'success')
-        return redirect('/home')
-
-@app.route('/account/<account_index>')
-def account_details(account_index):
-    # Handle user not logged in
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-
-    # display account information
-    try:
-        user_id = session.get('user_id')
-        account_info = user_manager.get_user_account_info_from_index(user_id,int(account_index))
-    except IndexError:
-        flash('It looks like you are lost. Try returning to the home page.', 'error')
-        return render_template('error.html')
-    except Exception as e:
-        flash(f'An unexpected error occurred: {str(e)}', 'error')
-        return render_template('error.html')
-    account_number = account_info.accountNumber
-    account_name = account_info.type
-    account_value = account_info.balance
-    return render_template('account_details.html', account_number = account_number,
-                            account_name = account_name, account_value = account_value)
-
-@app.route('/logs')
-def logs():
-    if 'user_id' not in session:
-        flash('You must be logged in to view this page', 'error')
-        return redirect('/login')
-    if session.get('role_id') != 1:
-        flash('Access Denied, Admin credentials required, beginning self destruct', 'error')
-        return redirect('/')
-
-    log_list = user_manager.get_database().get_audit_logs()
-    return render_template('log_browser.html', log_list = log_list)
-
-@app.route('/test/get_verification_code/<email>')
-def test_get_verification_code(email):
-    """Test endpoint to retrieve 2FA codes (testing only)"""
-    if not app.config.get('TESTING'):
-        return "Endpoint disabled in production", 403
-
-    code_data = user_manager._verification_codes.get(email)
-    if code_data and time.time() < code_data['expires']:
-        return {'code': code_data['code']}
-    return {'error': 'Code not found or expired'}, 404
+def handle_withdrawal_errors(errors, account_id, amount):
+    """Withdrawal error handling with memory tracking"""
+    if errors:
+        memory_manager.register_object("withdrawal_errors", errors)
+        for error in errors:
+            flash(error, 'error')
+        logging.error("Withdrawal failed: %s", errors)
+    else:
+        logging.info("Successful withdrawal: %s from %s", amount, account_id)
+        flash('Withdrawal successful!', 'success')
 
 if __name__ == '__main__':
-    #app.run(debug=False) # Changed to false, for the log to show output
-    app.run(debug=True) # Changed to true, in order to get the verification code on school wifi :3
+    app.run(host='0.0.0.0', port=5000, debug=(env == 'development'))
