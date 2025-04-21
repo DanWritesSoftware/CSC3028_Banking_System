@@ -20,6 +20,9 @@ import bcrypt
 from database_handler import Database
 from input_validator import InputValidator
 
+from encryption_utils import encrypt_string_with_file_key
+from encryption_utils import decrypt_string_with_file_key
+
 import os 
 
 # Configure logging
@@ -143,18 +146,27 @@ class UserManager:
     def login(self, username: str, password: str) -> Optional[Dict]:
         """Initiates authentication and triggers 2FA email."""
         try:
-            encrypted_username = encrypt_string_with_file_key(username)
-            user_data = db_manager.get_user_by_username(encrypted_username)
+            user_data = db_manager.get_user_by_username(username)
             if not user_data:
                 logging.warning("Login failed: User not found.")
                 return None
 
             stored_hash = user_data['password']
             if bcrypt.checkpw(password.encode(), stored_hash.encode()):
-                email = user_data['email']
-                code = self._generate_verification_code(email)
-                self._send_verification_email(email, code)
-                return {'requires_2fa': True, 'email': email}
+                encrypted_email = user_data['email']
+
+                try:
+                    decrypted_email = decrypt_string_with_file_key(encrypted_email)
+
+                except Exception as e:
+                    logging.error(f"Failed to decrypt email for 2FA: {e}")
+                    return None
+        
+                code = self._generate_verification_code(decrypted_email)
+                self._send_verification_email(decrypted_email, code)
+
+                return {'requires_2fa': True, 'email': decrypted_email}
+
             logging.warning("Incorrect password.")
             return None
         except sqlite3.Error as e:

@@ -7,6 +7,7 @@ import sqlite3
 import threading
 from Account import Account
 from audit_log import AuditLog
+from encryption_utils import decrypt_string_with_file_key
 
 class Database:
     """
@@ -210,28 +211,45 @@ class Database:
     def get_user_by_username(self, username: str) -> dict | None:
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM User WHERE usrName=?", (username,))
-        row = cursor.fetchone()
-        return {
-            "usrID": row[0],
-            "usrName": row[1],
-            "email": row[2],
-            "password": row[3],
-            "RoleID": row[4]
-        } if row else None
+        cursor.execute("SELECT * FROM User")
+        rows = cursor.fetchall()
+
+        for row in rows:
+            try:
+                decrypted_username = decrypt_string_with_file_key(row[1])
+                if decrypted_username == username:
+                    return {
+                        "usrID": row[0],
+                        "usrName": row[1],
+                        "email": row[2],
+                        "password": row[3],
+                        "RoleID": row[4]
+                    }
+            except Exception as e:
+                continue
+        return None
 
     def get_user_by_email(self, email: str) -> dict | None:
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM User WHERE email=?", (email,))
-        row = cursor.fetchone()
-        return {
-            "usrID": row[0],
-            "usrName": row[1],
-            "email": row[2],
-            "password": row[3],
-            "RoleID": row[4]
-        } if row else None
+        cursor.execute("SELECT * FROM user")
+        rows = cursor.fetchall()
+
+        for row in rows:
+            try:
+                decrypted_email = decrypt_string_with_file_key(row[2])
+                if decrypted_email == email:        
+                    return {
+                        "usrID": row[0],
+                        "usrName": row[1],
+                        "email": row[2],
+                        "password": row[3],
+                        "RoleID": row[4]
+                    } if row else None
+            except Exception:
+                continue
+
+        return None
 
     def get_user_creation_log(self, identifier: str) -> list:
         conn = self.get_connection()
