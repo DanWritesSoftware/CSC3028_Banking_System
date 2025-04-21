@@ -14,6 +14,8 @@ from typing import Optional, Dict
 from Account import Account
 from flask import session
 
+from encryption_utils import encrypt_string_with_file_key
+
 import bcrypt
 from database_handler import Database
 from input_validator import InputValidator
@@ -76,8 +78,13 @@ class UserManager:
             if not db_manager.user_id_in_use(user_id):
                 break
 
+        encrypted_username = encrypt_string_with_file_key(username)
+
+        encrypted_email = encrypt_string_with_file_key(email)
+
         hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        db_manager.create_user(user_id, username, email, hashed_password, 3)
+
+        db_manager.create_user(user_id, encrypted_username, encrypted_email, hashed_password, 3)
         logging.info("User %s registered successfully.", username)
         return "User registered successfully!"
 
@@ -136,7 +143,8 @@ class UserManager:
     def login(self, username: str, password: str) -> Optional[Dict]:
         """Initiates authentication and triggers 2FA email."""
         try:
-            user_data = db_manager.get_user_by_username(username)
+            encrypted_username = encrypt_string_with_file_key(username)
+            user_data = db_manager.get_user_by_username(encrypted_username)
             if not user_data:
                 logging.warning("Login failed: User not found.")
                 return None
