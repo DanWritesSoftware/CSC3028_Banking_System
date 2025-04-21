@@ -1,0 +1,13 @@
+# Security Sensitive Files
+encryption_key.key
+private_key.pem
+public_key.pem
+*.bak
+
+# General Python Ignore
+__pycache__/
+*.pyc
+.env
+
+#TO DO
+gmail_password.txt
