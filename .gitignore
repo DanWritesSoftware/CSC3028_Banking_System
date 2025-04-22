@@ -9,5 +9,9 @@ __pycache__/
 *.pyc
 .env
 
+#certs
+certs/flask.key
+certs/flask.crt
+
 #TO DO
 gmail_password.txt

@@ -452,4 +452,18 @@ def handle_withdrawal_errors(errors, account_id, amount):
         flash('Withdrawal successful!', 'success')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=(env == 'development'))
+    use_ssl = os.getenv('USE_SSL', 'false').lower() == 'true'
+    debug_mode = env == 'development'
+
+    if use_ssl:
+        cert_path = os.path.join('certs', 'flask.crt')
+        key_path = os.path.join('certs', 'flask.key')
+        if os.path.exists(cert_path) and os.path.exists(key_path):
+            print("[INFO] Starting Flask with SSL context")
+            app.run(host='0.0.0.0', port=5000, debug=debug_mode, ssl_context=(cert_path, key_path))
+        else:
+            print("[ERROR] SSL enabled but cert/key files not found. Falling back to HTTP.")
+            app.run(host='0.0.0.0', port=5000, debug=debug_mode)
+    else:
+        print("[INFO] Starting Flask without SSL (HTTP mode)")
+        app.run(host='0.0.0.0', port=5000, debug=debug_mode)
