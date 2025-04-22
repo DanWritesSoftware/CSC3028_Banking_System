@@ -8,6 +8,8 @@ import threading
 from Account import Account
 from audit_log import AuditLog
 from encryption_utils import decrypt_string_with_file_key
+from signature_utils import sign_message
+from datetime import datetime
 
 class Database:
     """
@@ -135,6 +137,22 @@ class Database:
                     "UPDATE Account SET accValue=? WHERE accID=?",
                     (new_balance, account_id)
                 )
+
+                # Audit with digital signature
+                operation = "WITHDRAW"
+                table_name = "Account"
+                timestamp = datetime.utcnow().isoformat()
+                old_value = f"Balance: {balance}"
+                new_value = f"Balance: {new_balance}"
+                message = f"{operation}|{table_name}|{old_value}|{new_value}|{timestamp}"
+                signature = sign_message(message).hex()
+
+                cursor.execute(
+                    "INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt, signature) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (operation, table_name, old_value, new_value, timestamp, signature)
+                )
+
             return []
         except sqlite3.Error as e:
             errors.append(f"Database error: {str(e)}")
@@ -148,12 +166,32 @@ class Database:
         try:
             with conn:
                 cursor = conn.cursor()
-                cursor.execute(
-                    "UPDATE Account SET accValue = accValue + ? WHERE accID=?",
-                    (amount, account_id)
-                )
-                if cursor.rowcount == 0:
+                cursor.execute("SELECT accValue FROM Account WHERE accID=?", (account_id,))
+                
+                result = cursor.fetchone()
+
+                if not result:
                     return ["Error: Account not found"]
+                
+                balance = float(result[0])
+                new_balance = balance + amount
+
+                cursor.execute ("UPDATE Account SET accValue = ? WHERE accID = ?", (new_balance, account_id))
+                
+                # Audit with digital signature
+                operation = "DEPOSIT"
+                table_name = "Account"
+                timestamp = datetime.utcnow().isoformat()
+                old_value = f"Balance: {balance}"
+                new_value = f"Balance: {new_balance}"
+                message = f"{operation}|{table_name}|{old_value}|{new_value}|{timestamp}"
+                signature = sign_message(message).hex()
+
+                cursor.execute(
+                    "INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt, signature) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (operation, table_name, old_value, new_value, timestamp, signature)
+                )
             return []
         except sqlite3.Error as e:
             return [f"Database error: {str(e)}"]
@@ -168,30 +206,57 @@ class Database:
                     "SELECT accValue FROM Account WHERE accID=?",
                     (from_account_id,)
                 )
-                from_balance = cursor.fetchone()
-                if not from_balance:
-                    return ["Error: Source account not found"]
+                from_result = cursor.fetchone()
+                if not from_result:
+                    return ["Error: Source Account Not Found"]
+                from_balance = float(from_result[0])
+
+                if from_balance < amount:
+                    return ["Error: Insufficient Funds"]
                 
-                if float(from_balance[0]) < amount:
-                    return ["Error: Insufficient funds"]
+                cursor.execute("SELECT accValue FROM Account WHERE accID=?", (to_account_id,))
+
+                to_result = cursor.fetchone()
+
+                if not to_result:
+                    return ["Error: Destination Account Not Found"]
                 
-                # Check destination account
-                cursor.execute(
-                    "SELECT 1 FROM Account WHERE accID=?",
-                    (to_account_id,)
-                )
-                if not cursor.fetchone():
-                    return ["Error: Destination account not found"]
+                to_balance = float(to_result[0])
+
+                new_from_balance = from_balance - amount
                 
-                # Perform transfer
+                new_to_balance = to_balance + amount
+
                 cursor.execute(
-                    "UPDATE Account SET accValue = accValue - ? WHERE accID=?",
-                    (amount, from_account_id)
+                    "UPDATE Account SET accValue = ? WHERE accID = ?", 
+                    (new_from_balance, from_account_id)
                 )
+
                 cursor.execute(
-                    "UPDATE Account SET accValue = accValue + ? WHERE accID=?",
-                    (amount, to_account_id)
+                    "UPDATE Account SET accValue = ? WHERE accID = ?",
+                    (new_to_balance, to_account_id)
                 )
+
+                timestamp = datetime.utcnow().isoformat()
+
+                # Log withdrawal audit
+                withdraw_message = f"TRANSFER-WITHDRAWAL|Account|Balance: {from_balance}|Balance: {new_from_balance}|{timestamp}"
+                withdraw_signature = sign_message(withdraw_message).hex()
+                cursor.execute(
+                    "INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt, signature) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    ("TRANSFER-WITHDRAWAL", "Account", f"Balance: {from_balance}", f"Balance: {new_from_balance}", timestamp, withdraw_signature)
+                )
+
+                # Log deposit audit
+                deposit_message = f"TRANSFER-DEPOSIT|Account|Balance: {to_balance}|Balance: {new_to_balance}|{timestamp}"
+                deposit_signature = sign_message(deposit_message).hex()
+                cursor.execute(
+                    "INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt, signature) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    ("TRANSFER-DEPOSIT", "Account", f"Balance: {to_balance}", f"Balance: {new_to_balance}", timestamp, deposit_signature)
+                )
+                
             return []
         except sqlite3.Error as e:
             return [f"Database error: {str(e)}"]
@@ -282,7 +347,8 @@ class Database:
                 row[2],  # TableName
                 row[3],  # oldValue
                 row[4],  # newValue
-                row[5]   # ChangedAt
+                row[5],  # ChangedAt
+                row[6]   # signature
             ) for row in cursor.fetchall()
         ]
 
