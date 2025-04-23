@@ -1,20 +1,21 @@
+import hashlib
 from database_handler import Database
 
-# Initialize database handler
-db = Database("BankingDatabase.db")
+# Initialize database
+db = Database("BankingData.db")
 
-# Define test data
-acc_id = "9999999999"           # 10-digit unique ID
-usr_id = "1234567890"           # Make sure this user ID exists in your User table
-acc_name = "Test Account"
-acc_balance = 100.50
+# Username for testing
+username = "testuser1741464305"
 
-# Call the create_account method
-try:
-    success = db.create_account(acc_id, usr_id, acc_name, acc_balance)
-    if success:
-        print("✅ Account created successfully!")
-    else:
-        print(" Account creation failed.")
-except Exception as e:
-    print(" Error:", e)
+# Print computed hash for debugging
+username_hash = hashlib.sha256(username.lower().encode()).hexdigest()
+print(f"[DEBUG] Computed hash: {username_hash}")
+
+print("\n[TEST] Searching user with hash-based encrypted search (fast)...")
+result = db.get_user_encrypted_search(username)
+
+if result:
+    print("[PASS] Encrypted search via hash succeeded.")
+    print(f"User: {result['usrName']} | Email: {result['email']}")
+else:
+    print("[FAIL] Encrypted search via hash failed.")

@@ -5,6 +5,7 @@ This module handles database operations for the banking system.
 
 import sqlite3
 import threading
+import hashlib
 from Account import Account
 from audit_log import AuditLog
 from encryption_utils import decrypt_string_with_file_key
@@ -47,12 +48,13 @@ class Database:
             conn.rollback()
             raise e
 
-    def create_user(self, usr_id: str, usr_name: str, email: str, password: str, role_id: int) -> bool:
+    def create_user(self, usr_id: str, usr_name: str, email: str, password: str, role_id: int, username_hash: str, email_hash: str) -> bool:
         conn = self.get_connection()
         try:
+
             conn.execute(
-                "INSERT INTO User (usrID, usrName, email, password, RoleID) VALUES (?, ?, ?, ?, ?)",
-                (usr_id, usr_name, email, password, role_id)
+                "INSERT INTO User (usrID, usrName, email, password, RoleID, usrNameHash, emailHash) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (usr_id, usr_name, email, password, role_id, username_hash, email_hash)
             )
             conn.commit()
             return True
@@ -293,6 +295,25 @@ class Database:
             except Exception as e:
                 continue
         return None
+    
+    def get_user_encrypted_search(self, username: str) -> dict | None:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        username_hash = hashlib.sha256(username.lower().encode()).hexdigest()
+
+        cursor.execute("SELECT* FROM User WHERE usrNameHash = ?", (username_hash,))
+
+        row = cursor.fetchone()
+
+        if row:
+            return {
+                "usrID": row[0],
+                "usrName": row[1],
+                "email": row[2],
+                "password": row[3],
+                "RoleID": row[4]
+            }
+        return None
 
     def get_user_by_email(self, email: str) -> dict | None:
         conn = self.get_connection()
@@ -314,6 +335,25 @@ class Database:
             except Exception:
                 continue
 
+        return None
+    
+    def get_user_encrypted_email_search(self, email: str) -> dict | None:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        email_hash = hashlib.sha256(email.lower().encode()).hexdigest()
+
+        cursor.execute("SELECT* FROM User WHERE emailHash = ?", (email_hash,))
+
+        row = cursor.fetchone()
+
+        if row:
+            return {
+                "usrID": row[0],
+                "usrName": row[1],
+                "email": row[2],
+                "password": row[3],
+                "RoleID": row[4]
+            }
         return None
 
     def get_user_creation_log(self, identifier: str) -> list:
