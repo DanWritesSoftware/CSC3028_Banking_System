@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Audit Logs</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='evilStyle.css') }}">
+</head>
+<body>
+    <div class="header">
+        <h1>Audit Logs</h1>
+        <h4>Welcome, {{ username }}</h4>
+        <div class="headerGrid">
+            <div><a href="/admin">Back to Admin Dashboard</a></div>
+            <div><a href="/logout">Logout</a></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>System Activity Log</h2>
+        {% if logs %}
+            <div style="overflow-x: auto;">
+                <table border="1" cellpadding="10" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th>Table</th>
+                            <th>Old Value</th>
+                            <th>New Value</th>
+                            <th>Timestamp</th>
+                            <th>Signature</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                            <tr>
+                                <td>{{ log.Operation }}</td>
+                                <td>{{ log.TableName }}</td>
+                                <td>{{ log.oldValue }}</td>
+                                <td>{{ log.newValue }}</td>
+                                <td>{{ log.ChangedAt }}</td>
+                                <td>{{ log.signature }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>No audit logs available.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

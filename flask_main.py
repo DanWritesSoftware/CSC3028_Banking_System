@@ -17,6 +17,8 @@ from deposit_handler import Deposit
 from withdrawal_handler import Withdrawal
 from memory_manager import MemoryManager
 from input_validator import InputValidator
+from encryption_utils import decrypt_string_with_file_key, mask_email, mask_username, mask_account_number
+from audit_log_utils import mask_and_decrypt_all
 
 # Initialize Flask Application
 app = Flask(__name__)
@@ -124,7 +126,7 @@ def verify_2fa():
 
         if user:
             session['user_id'] = user['usrID']
-            session['username'] = user['usrName']
+            session['username'] = decrypt_string_with_file_key(user['usrName'])
             session['role_id'] = user['RoleID']
             session.pop('2fa_email', None)
             return redirect('/home')
@@ -155,8 +157,13 @@ def customer_dashboard():
             return render_template('error.html')
             
         return render_template('home.html', 
-                            account_list=account_array,
-                            username=session.get('username'))
+                            account_list=[{
+                                'number': mask_account_number(acc.accountNumber),
+                                'type': acc.type,
+                                'balance': acc.balance
+                            } for acc in account_array
+                            ],
+                            username=mask_username(session.get('username')))
     except Exception as e:
         memory_manager.cleanup()
         logging.error(f"Memory error in customer dashboard: {str(e)}")
@@ -199,7 +206,7 @@ def teller_account_lookup():
                 account_info_list.append({
                     'index': i,
                     'type': acc.type,
-                    'number': acc.accountNumber,
+                    'number': acc.accountNumber(acc.accountNumber),
                     'balance': acc.balance
                 })
             memory_manager.register_object("found_accounts", account_info_list)
@@ -219,7 +226,7 @@ def teller_view_account(usr_id, account_index):
         memory_manager.register_object("viewed_account", account_info)
         
         return render_template('account_details.html',
-                             account_number=account_info.accountNumber,
+                             account_number=account_info.accountNumber(account_info.accountNumber),
                              account_name=account_info.type,
                              account_value=account_info.balance,
                              usr_id=usr_id,
@@ -355,6 +362,20 @@ def register_admin():
         flash(result, 'error')
     
     return render_template('registerAdmin.html')
+
+# --------------------------
+# Admin Specfic Routes
+# --------------------------
+
+@app.route('/logs')
+@requires_role([1])
+def view_logs():
+    """Admin only audit log viewer with masked output"""
+    logs = user_manager.get_database().get_audit_logs()
+    masked_logs = mask_and_decrypt_all(logs)
+    return render_template('logs.html', logs=masked_logs, username=session.get('username'))
+
+
 
 @app.route('/password-reset', methods=['GET', 'POST'])
 @requires_role([1, 2, 3])

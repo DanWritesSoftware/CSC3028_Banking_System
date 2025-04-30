@@ -93,8 +93,8 @@ class UserManager:
         hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
         db_manager.create_user(user_id, encrypted_username, encrypted_email, hashed_password, 3, username_hash, email_hash)
-        logging.info("User %s registered successfully.", username)
-        return "User registered successfully!"
+        logging.info("User %s registered successfully with ID %s.", username, user_id)
+        return user_id
 
     def sign_up_teller(self, username: str, email: str, password: str, confirm_password: str) -> str:
         """Registers a new user with hashed password security."""
