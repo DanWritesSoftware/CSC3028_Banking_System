@@ -553,34 +553,38 @@ class Database:
 
     def backup_encrypted_database(self, backup_path: str, encryption_key_path: str) -> bool:
         """
-        Creates an encrypted backup of the database file using Fernet encryption.
-        Args:
-            backup_path (str): Full path where the encrypted backup will be saved.
-            encryption_key_path (str): Path to the Fernet key used for encryption.
-        Returns:
-            bool: True if backup is successful, False otherwise.
+        Creates an encrypted backup using VACUUM INTO.
+        Ensures the backup includes all schema and data safely.
         """
         try:
+            # Create temp clean DB file with VACUUM INTO
+            temp_clean_path = backup_path + ".tmp_clean"
+
+            conn = self.get_connection()
+            conn.execute(f"VACUUM INTO '{temp_clean_path}'")
+            conn.commit()
+
             # Load encryption key
             with open(encryption_key_path, 'rb') as key_file:
                 key = key_file.read()
-
             cipher = Fernet(key)
 
-            # Read original DB file as bytes
-            with open(self.name, 'rb') as original_file:
-                db_data = original_file.read()
+            # Read flushed db into bytes
+            with open(temp_clean_path, 'rb') as f:
+                db_data = f.read()
 
-            # Encrypt and write to backup file
-            encrypted_data = cipher.encrypt(db_data)
+            # Encrypt and save
+            encrypted = cipher.encrypt(db_data)
+            with open(backup_path, 'wb') as f:
+                f.write(encrypted)
 
-            with open(backup_path, 'wb') as backup_file:
-                backup_file.write(encrypted_data)
-
+            os.remove(temp_clean_path)
             return True
+
         except Exception as e:
-            print(f"[ERROR] Failed to create encrypted backup: {e}")
+            print(f"[ERROR] Encrypted backup failed: {e}")
             return False
+
     def restore_encrypted_backup(self, backup_path: str, encryption_key_path: str) -> bool:
         """
         Restores the encrypted database backup by decrypting and replacing the current DB file.

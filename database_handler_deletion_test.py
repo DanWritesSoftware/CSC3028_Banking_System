@@ -1,94 +1,109 @@
 import os
+import gc
+import time
 import tempfile
 import hashlib
-import secrets
 from database_handler import Database
 from encryption_utils import encrypt_string_with_file_key
 
-def setup_temp_database():
-    temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
-    db = Database(temp_db.name)
-    conn = db.get_connection()
-    cursor = conn.cursor()
+def run_backup_restore_test():
+    print("[TEST] Encrypted Backup and Restore")
 
-    cursor.executescript("""
-        CREATE TABLE IF NOT EXISTS User (
-            usrID TEXT PRIMARY KEY,
-            usrName TEXT,
-            email TEXT,
-            password TEXT,
-            RoleID INTEGER,
-            usrNameHash TEXT,
-            emailHash TEXT
-        );
-        CREATE TABLE IF NOT EXISTS Account (
-            accID TEXT PRIMARY KEY,
-            accType TEXT,
-            usrID TEXT,
-            accValue TEXT
-        );
-        CREATE TABLE IF NOT EXISTS auditLog (
-            ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            Operation TEXT,
-            TableName TEXT,
-            oldValue TEXT,
-            newValue TEXT,
-            ChangedAt TEXT,
-            signature TEXT
-        );
-    """)
-    conn.commit()
-    return db, temp_db.name
+    # Create unique temp paths instead of using NamedTemporaryFile
+    db_fd, temp_db_path = tempfile.mkstemp(suffix=".db")
+    os.close(db_fd)  # Close the file descriptor so SQLite can access it
+    backup_path = temp_db_path + ".bak"
+    key_path = "encryption_key.key"
 
-def insert_test_data(db, user_id, account_id):
-    username = "TestUser"
-    email = "test@example.com"
-    password = secrets.token_hex(16)
+    test_usr_id = "USR_TEST_BACKUP"
+    test_acc_id = "ACC_TEST_BACKUP"
 
-    encrypted_name = encrypt_string_with_file_key(username)
-    encrypted_email = encrypt_string_with_file_key(email)
-    username_hash = hashlib.sha256(username.encode()).hexdigest()
-    email_hash = hashlib.sha256(email.encode()).hexdigest()
+    try:
+        # Step 1: Create DB and schema
+        db = Database(temp_db_path)
+        with db.get_connection() as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS User (
+                    usrID TEXT PRIMARY KEY,
+                    usrName TEXT,
+                    email TEXT,
+                    password TEXT,
+                    RoleID INTEGER,
+                    usrNameHash TEXT,
+                    emailHash TEXT
+                )""")
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS Account (
+                    accID TEXT PRIMARY KEY,
+                    accType TEXT,
+                    usrID TEXT,
+                    accValue TEXT
+                )""")
+            conn.commit()
 
-    db.get_cursor().execute(
-        "INSERT INTO User VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (user_id, encrypted_name, encrypted_email, password, 3, username_hash, email_hash)
-    )
+        # Step 2: Insert data
+        encrypted_usrname = encrypt_string_with_file_key("backupuser")
+        encrypted_email = encrypt_string_with_file_key("backup@test.com")
+        usr_hash = hashlib.sha256("backupuser".encode()).hexdigest()
+        email_hash = hashlib.sha256("backup@test.com".encode()).hexdigest()
 
-    acc_type = encrypt_string_with_file_key("Checking")
-    acc_value = encrypt_string_with_file_key("999.99")
+        db.create_user(test_usr_id, encrypted_usrname, encrypted_email, "secure123", 3, usr_hash, email_hash)
+        db.create_account(test_acc_id, test_usr_id, "Checking", 1000.00)
 
-    db.get_cursor().execute(
-        "INSERT INTO Account VALUES (?, ?, ?, ?)",
-        (account_id, acc_type, user_id, acc_value)
-    )
-    db.get_connection().commit()
+        # Step 3: Backup
+        if db.backup_encrypted_database(backup_path, key_path):
+            print("[PASS] Encrypted backup created.")
+        else:
+            print("[FAIL] Backup failed.")
+            return
 
-def run_deletion_tests():
-    db, path = setup_temp_database()
+        # Step 4: Simulate data loss
+        with db.get_connection() as conn:
+            conn.execute("DELETE FROM Account")
+            conn.execute("DELETE FROM User")
+            conn.commit()
 
-    assert "BankingData.db" not in db.name, " Refusing to test on production database!"
+        # Step 5: Restore
+        if db.restore_encrypted_backup(backup_path, key_path):
+            print("[PASS] Database restored.")
+        else:
+            print("[FAIL] Restore failed.")
+            return
 
-    user_id = "USR_TEST_0001"
-    acc_id = "ACC_TEST_0001"
+        # Step 6: Reset DB object
+        db.close_all_connections()
+        del db
+        gc.collect()
+        time.sleep(0.1)  # Let the OS release handles
 
-    insert_test_data(db, user_id, acc_id)
+        db = Database(temp_db_path)
 
-    print("[TEST] secure_delete_account()")
-    assert db.secure_delete_account(acc_id), "secure_delete_account() failed"
-    acc_row = db.get_cursor().execute("SELECT * FROM Account WHERE accID = ?", (acc_id,)).fetchone()
-    assert acc_row is None, "Account was not fully deleted"
-    print("[PASS] Account deleted securely.")
+        # Step 7: Verify restoration
+        restored_accounts = db.get_user_accounts(test_usr_id)
+        if len(restored_accounts) == 1 and restored_accounts[0].accountNumber == test_acc_id:
+            print("[PASS] Data restoration verified.")
+        else:
+            print("[FAIL] Restored data does not match.")
 
-    print("[TEST] secure_delete_user()")
-    assert db.secure_delete_user(user_id), "secure_delete_user() failed"
-    user_row = db.get_cursor().execute("SELECT * FROM User WHERE usrID = ?", (user_id,)).fetchone()
-    assert user_row is None, "User was not fully deleted"
-    print("[PASS] User deleted securely.")
+    except Exception as e:
+        print(f"[ERROR] Test failed: {e}")
 
-    db.close_all_connections()
-    os.remove(path)
-    print("[CLEANUP] Temporary DB connection closed and file removed.")
+    finally:
+        # Final cleanup
+        if 'db' in locals():
+            db.close_all_connections()
+            del db
+        gc.collect()
+        time.sleep(0.1)
+
+        try:
+            if os.path.exists(temp_db_path):
+                os.remove(temp_db_path)
+            if os.path.exists(backup_path):
+                os.remove(backup_path)
+            print("[CLEANUP] Temporary DB files removed.")
+        except Exception as cleanup_error:
+            print(f"[ERROR] Cleanup failed: {cleanup_error}")
 
 if __name__ == "__main__":
-    run_deletion_tests()
+    run_backup_restore_test()

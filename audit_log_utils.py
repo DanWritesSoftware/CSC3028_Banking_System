@@ -15,7 +15,7 @@ def mask_and_decrypt(log: AuditLog) -> dict:
         "oldValue": old_value[:50] + "..." if len(old_value) > 50 else old_value,
         "newValue": new_value[:50] + "..." if len(new_value) > 50 else new_value,
         "ChangedAt": log.ChangedAt,
-        "signature": log.signature[:10] + "..."
+        "signature": log.signature[:10] + "..." if log.signature else "[No Signature]"
     }
 
 def mask_and_decrypt_all(logs: list[AuditLog]) -> list[dict]:

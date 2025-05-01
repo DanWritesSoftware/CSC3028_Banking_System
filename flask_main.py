@@ -129,7 +129,13 @@ def verify_2fa():
             session['username'] = decrypt_string_with_file_key(user['usrName'])
             session['role_id'] = user['RoleID']
             session.pop('2fa_email', None)
-            return redirect('/home')
+
+            if user['RoleID'] == 1:
+                return redirect('/admin')
+            elif user['RoleID'] == 2:
+                return redirect('/teller-home')
+            else:
+                return redirect('/home')
 
         flash('Invalid verification code', 'error')
     return render_template('verify_2fa.html')

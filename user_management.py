@@ -219,19 +219,27 @@ class UserManager:
             del self._verification_codes[email]
 
             user_data = db_manager.get_user_by_email(email)
+            if not user_data:
+                logging.error("User not found during 2FA verification for %s", email)
+                return None
+            
+            try:
+                session['username'] = decrypt_string_with_file_key(user_data['usrName'])
 
-            if user_data:
-                session['username'] = user_data['usrName']
-                session['user_id'] = user_data['usrID']
-                session['email'] = user_data['email']
-                session['role_id'] = user_data['RoleID']
+            except Exception as e:
+                logging.error("Failed to decrypt username for the session: %s", e)
+                return None
+            
+            session['user_id'] = user_data['usrID']
+            session['email'] = user_data['email']
+            session['role_id'] = user_data['RoleID']
 
-                logging.info("User %s logged in with RoleID %s", user_data['usrName'], user_data['RoleID'])
-
-                return user_data
-
-        logging.warning("Invalid code for %s", email)
-        return None
+            logging.info("2FA success. User %s authenticated", session['username'])
+            return user_data
+    
+        else:
+            logging.warning("Invalid code for %s", email)
+            return None
 
     def _generate_verification_code(self, email: str) -> str:
         """Generates 6-digit verification code."""
@@ -241,9 +249,11 @@ class UserManager:
             'expires': time.time() + CODE_EXPIRATION
         }
 
-        if os.getenv("FLASK_ENV", "").lower() in ["testing", "development"]:
-            print(f"[DEV MODE] 2FA code for {email}: {code}")  # Force print for visibility
-            logging.warning(f"[DEV MODE] 2FA code for {email}: {code}")
+        env = os.getenv("FLASK_ENV", "").lower()
+
+        if env in ["testing, development"]:
+            print(f"[DEV MODE] 2FA code for {email}: {code}")
+            logging.debug(f"[DEV MODE] 2FA code for {email}: {code}")
         return code
 
     def _send_verification_email(self, email: str, code: str) -> None:
@@ -268,6 +278,7 @@ class UserManager:
             logging.error("OS error occurred: %s", str(oe))
         except Exception as ex:
             logging.error("Unexpected error occurred: %s", str(ex))
+
     def password_reset(self, username: str, email: str,
                      new_password: str, confirm_password: str) -> str:
         """Handles password reset."""
