@@ -3,6 +3,7 @@ import hashlib
 from cryptography.fernet import Fernet
 from key_manager import load_or_create_key, rotate_key, get_cipher
 from cryptography.fernet import Fernet
+from cryptography.fernet import InvalidToken
 
 KEY_FILE = "encryption_key.key"
 
@@ -43,11 +44,16 @@ def mask_username(username: str) -> str:
         return "*" * len(username)
     return username[0] + "*" * (len(username) - 2) + username[-1:]
 
-
 def decrypt_string_with_file_key(encrypted: str) -> str:
     """Decrypts a string using the file-based key."""
     cipher = get_cipher()
-    return cipher.decrypt(encrypted.encode()).decode()
+    try:
+        return cipher.decrypt(encrypted.encode()).decode()
+    except InvalidToken:
+        raise ValueError(f"Invalid token. Decryption failed for: {encrypted[:20]}...")
+    except Exception as e:
+        raise ValueError(f"Unexpected error during decryption: {str(e)}")
+
 
 def rotate_encryption_key():
     """Rotate the encryption key with backup"""

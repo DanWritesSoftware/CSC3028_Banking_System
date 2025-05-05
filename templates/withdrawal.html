@@ -8,7 +8,14 @@
 <link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
 <body>
 
-<a href="/home">back</a>
+{% if session.get('role_id') == 1 %}
+    <a href="/admin">back</a>
+{% elif session.get('role_id') == 2 %}
+    <a href="/teller">back</a>
+{% else %}
+    <a href="/home">back</a>
+{% endif %}
+
 
 <!-- Display flash messages here -->
     {% with messages = get_flashed_messages(with_categories=true) %}

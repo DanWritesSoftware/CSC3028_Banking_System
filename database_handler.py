@@ -15,7 +15,7 @@ from audit_log import AuditLog
 from encryption_utils import decrypt_string_with_file_key, encrypt_string_with_file_key
 from signature_utils import sign_message
 from datetime import datetime
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 class Database:
     """
@@ -76,20 +76,40 @@ class Database:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Account WHERE usrID=?", (usr_id,))
         accounts = []
+
         for row in cursor.fetchall():
             try:
-                decrypted_type = decrypt_string_with_file_key(row[1])
+                acc_number = row[0]
+                acc_value_raw = row[1]  # Encrypted numeric balance
+                acc_type_raw = row[2]   # Encrypted string (e.g., "Checking")
 
-                if isinstance(row[3], (int, float)):
-                    decrypted_balance = float(row[3])
-                else:
-                    decrypted_balance = float(decrypt_string_with_file_key(row[3]))
+                # Decrypt account type
+                try:
+                    decrypted_type = decrypt_string_with_file_key(acc_type_raw)
+                except (InvalidToken, Exception):
+                    decrypted_type = str(acc_type_raw)  # fallback if decryption fails
 
-                accounts.append(Account(row[0], decrypted_type, decrypted_balance))
+                # Decrypt and parse balance
+                try:
+                    decrypted_balance_str = decrypt_string_with_file_key(acc_value_raw)
+                    decrypted_balance = float(decrypted_balance_str)
+                except (InvalidToken, ValueError):
+                    try:
+                        decrypted_balance = float(acc_value_raw)  # fallback if plaintext
+                    except Exception:
+                        raise ValueError(f"Balance failed decryption and float cast: {acc_value_raw}")
+
+                accounts.append(Account(
+                    accountNumber=acc_number,
+                    accountType=decrypted_type,
+                    balance=decrypted_balance
+                ))
 
             except Exception as e:
-                print(f"[ERROR] Decryption Failed for account {row[0]}:{e}")
-        return accounts
+                print(f"[ERROR] Decryption Failed for account {row[0]}: {e}")
+
+        print("[DEBUG] get_user_accounts returning:", accounts)
+        return accounts  
 
     def get_users(self, usr_id: str) -> list[dict]:
         conn = self.get_connection()
@@ -148,15 +168,18 @@ class Database:
                     errors.append("Error: Account not found")
                     return errors
                 
-                balance = float(result[0])
+                decrypted_balance = decrypt_string_with_file_key(result[0])
+                balance = float(decrypted_balance)
                 if balance < amount:
                     errors.append("Error: Insufficient funds")
                     return errors
                 
                 new_balance = balance - amount
+
+                encrypted_new_balance = encrypt_string_with_file_key(str(new_balance))
                 cursor.execute(
                     "UPDATE Account SET accValue=? WHERE accID=?",
-                    (new_balance, account_id)
+                    (encrypted_new_balance, account_id)
                 )
 
                 # Encrypted Audit with digital signature
@@ -194,10 +217,20 @@ class Database:
                 if not result:
                     return ["Error: Account not found"]
                 
-                balance = float(result[0])
+                encrypted_balance = result[0]
+                
+                try:
+                    decrypted_balance = decrypt_string_with_file_key(encrypted_balance)
+                    balance = float(decrypted_balance)
+
+                except Exception as e:
+                    return [f"Error Decrypting Balance: {str(e)}"]
+                
                 new_balance = balance + amount
 
-                cursor.execute ("UPDATE Account SET accValue = ? WHERE accID = ?", (new_balance, account_id))
+                encrypted_new_balance = encrypt_string_with_file_key(str(new_balance))
+
+                cursor.execute ("UPDATE Account SET accValue = ? WHERE accID = ?", (encrypted_new_balance, account_id))
                 
                 # Audit with digital signature
                 operation = "DEPOSIT"

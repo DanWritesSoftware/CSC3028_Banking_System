@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Delete User</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='evilStyle.css') }}">
+</head>
+<body>
+    <h1>Secure Delete User</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post">
+        <label for="usr_id">User ID:</label>
+        <input type="text" name="usr_id" id="usr_id" required>
+        <button type="submit">Delete User</button>
+    </form>
+    <a href="/admin">Return to Admin Dashboard</a>
+</body>
+</html>

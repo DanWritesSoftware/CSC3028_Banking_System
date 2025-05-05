@@ -11,6 +11,7 @@ from functools import wraps
 from flask import Flask, render_template, request, redirect, flash, session
 from flask_session import Session
 from user_management import UserManager
+from database_handler import Database
 from session_manager import SessionManager
 from transfer_handler import Transfer
 from deposit_handler import Deposit
@@ -39,6 +40,7 @@ Session(app)
 # Application Components
 session_manager = SessionManager()
 user_manager = UserManager()
+db_manager = Database('BankingData.db')
 memory_manager = MemoryManager()
 failed_login_attempts = {}
 
@@ -133,7 +135,7 @@ def verify_2fa():
             if user['RoleID'] == 1:
                 return redirect('/admin')
             elif user['RoleID'] == 2:
-                return redirect('/teller-home')
+                return redirect('/teller')
             else:
                 return redirect('/home')
 
@@ -161,19 +163,67 @@ def customer_dashboard():
             for error in validation_errors:
                 flash(error, 'error')
             return render_template('error.html')
-            
-        return render_template('home.html', 
-                            account_list=[{
-                                'number': mask_account_number(acc.accountNumber),
-                                'type': acc.type,
-                                'balance': acc.balance
-                            } for acc in account_array
-                            ],
-                            username=mask_username(session.get('username')))
+
+        decrypted_accounts = []
+        for acc in account_array:
+            try:
+                decrypted_accounts.append({
+                    'number': acc.accountNumber,
+                    'number_masked': mask_account_number(acc.accountNumber),
+                    'type': acc.type,     # Already decrypted
+                    'balance': acc.balance  # Already float
+                })
+            except Exception as e:
+                logging.error(f"Unexpected error for account {getattr(acc, 'accountNumber', 'UNKNOWN')}: {e}")
+                flash("Unable to load one or more accounts due to unexpected error.", "error")
+                return render_template('error.html')
+
+        return render_template('home.html',
+                               account_list=decrypted_accounts,
+                               username=mask_username(session.get('username')))
     except Exception as e:
         memory_manager.cleanup()
         logging.error(f"Memory error in customer dashboard: {str(e)}")
         return render_template('error.html')
+    
+@app.route('/account/view/<account_number>')
+@requires_role([2, 3])
+def view_individual_account(account_number):
+    """View details of a specific account (customer or teller)"""
+    try:
+        role_id = session.get("role_id")
+        usr_id = session.get("user_id")
+
+        # Retrieve all accounts for the user (customer or teller-lookup)
+        if role_id == 3:
+            accounts = user_manager.get_database().get_user_accounts(usr_id)
+        else:
+            flash("Unauthorized access", "error")
+            return render_template("error.html")
+
+        for index, acc in enumerate(accounts):
+            if acc.accountNumber == account_number:
+                return render_template(
+                    "account_details.html",
+                    account_name=acc.type,
+                    account_number=acc.accountNumber,
+                    account_value=acc.balance,
+                    usr_id=usr_id if role_id == 2 else None,
+                    index=index if role_id == 2 else None
+                )
+
+        flash("Account not found or access denied", "error")
+        return render_template("error.html")
+
+    except Exception as e:
+        logging.exception(f"Failed to load account details for account {account_number}")
+        flash("Unexpected error occurred while loading account.", "error")
+        return render_template("error.html")
+
+
+# --------------------------
+# Teller Specific Routes
+# --------------------------
 
 @app.route('/teller')
 @requires_role([1, 2])
@@ -182,6 +232,58 @@ def teller_dashboard():
     memory_manager.register_object("teller_dashboard", session)
     return render_template('tellerHome.html', 
                          username=session.get('username'))
+
+@app.route('/new-account', methods=['GET', 'POST'])
+@requires_role([1, 2])
+def new_account():
+    """Create a new bank account for a user."""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        account_type = request.form.get('accountType')
+        initial_value = request.form.get('value')
+
+        # Validate input
+        if not username or not account_type or not initial_value:
+            flash("All fields are required.", "error")
+            return redirect('/new-account')
+
+        user = db_manager.get_user_by_username(username)
+        if not user:
+            flash(f"No user found with username: {username}", "error")
+            return redirect('/new-account')
+
+        try:
+            initial_value = float(initial_value)
+            if initial_value < 0:
+                raise ValueError
+        except ValueError:
+            flash("Deposit amount must be a non-negative number.", "error")
+            return redirect('/new-account')
+
+        # Generate account number and insert account into DB
+        account_number = ''.join(random.choices('0123456789', k=10))
+
+        try:
+            success = db_manager.create_account(
+                acc_id=account_number,
+                usr_id=user['usrID'],
+                acc_name=account_type,
+                acc_balance=initial_value
+        )
+            
+        except Exception as e:
+            flash("Account creation failed due to a system error.", "error")
+            return redirect('/new-account')
+
+        if success:
+            flash(f"Account created successfully. Account Number: {account_number}", "success")
+        else:
+            flash("Account creation failed. Try again.", "error")
+
+        return redirect('/new-account')
+
+    return render_template('newAccount.html')
+
 
 @app.route('/admin')
 @requires_role([1])
@@ -261,7 +363,11 @@ def transfer():
         handle_transfer_errors(errors, from_acc, to_acc, amount)
         
         memory_manager.check_for_leaks()
-        return redirect('/home')
+        role_id = session.get("role_id")
+        if role_id == 1:
+            redirect("/admin")
+        else:
+            redirect("/teller")
         
     return render_template('transfer.html')
 
@@ -282,7 +388,12 @@ def deposit():
         handle_deposit_errors(errors, account_id, amount)
         
         memory_manager.check_for_leaks()
-        return redirect('/home')
+        
+        role_id = session.get("role_id")
+        if role_id == 1:
+            redirect("/admin")
+        else:
+            redirect("/teller")
         
     return render_template('deposit.html')
 
@@ -303,7 +414,11 @@ def withdraw():
         handle_withdrawal_errors(errors, account_id, amount)
         
         memory_manager.check_for_leaks()
-        return redirect('/home')
+        role_id = session.get("role_id")
+        if role_id == 1:
+            redirect("/admin")
+        else:
+            redirect("/teller")
         
     return render_template('withdrawal.html')
 
@@ -381,7 +496,42 @@ def view_logs():
     masked_logs = mask_and_decrypt_all(logs)
     return render_template('logs.html', logs=masked_logs, username=session.get('username'))
 
+@app.route('/admin/delete-user', methods=['GET', 'POST'])
+@requires_role([1])
+def admin_delete_user():
+    if request.method == 'POST':
+        usr_id = request.form.get('usr_id')
+        if not usr_id:
+            flash("User ID is required", "error")
+            return redirect('/admin/delete-user')
 
+        result = user_manager.get_database().secure_delete_user(usr_id)
+        if result:
+            flash(f"Successfully deleted user {usr_id}", "success")
+        else:
+            flash(f"Failed to delete user {usr_id}", "error")
+        return redirect('/admin/delete-user')
+
+    return render_template('admin_delete_user.html')
+
+
+@app.route('/admin/delete-account', methods=['GET', 'POST'])
+@requires_role([1])
+def admin_delete_account():
+    if request.method == 'POST':
+        acc_id = request.form.get('acc_id')
+        if not acc_id:
+            flash("Account ID is required", "error")
+            return redirect('/admin/delete-account')
+
+        result = user_manager.get_database().secure_delete_account(acc_id)
+        if result:
+            flash(f"Successfully deleted account {acc_id}", "success")
+        else:
+            flash(f"Failed to delete account {acc_id}", "error")
+        return redirect('/admin/delete-account')
+
+    return render_template('admin_delete_account.html')
 
 @app.route('/password-reset', methods=['GET', 'POST'])
 @requires_role([1, 2, 3])
