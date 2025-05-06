@@ -533,6 +533,34 @@ def admin_delete_account():
 
     return render_template('admin_delete_account.html')
 
+@app.route('/admin/backup', methods=['GET', 'POST'])
+@requires_role([1])
+def admin_backup():
+    """Admin interface for triggering encrypted database backups"""
+    memory_manager.register_object("admin_backup", locals())
+    if request.method == 'POST':
+        success = db_manager.backup_encrypted_database()
+        if success:
+            flash("Encrypted backup created successfully!", "success")
+        else:
+            flash("Backup failed. See logs.", "error")
+        return redirect('/admin/backup')
+    return render_template('admin_backup.html', username=session.get('username'))
+
+@app.route('/admin/restore', methods=['GET', 'POST'])
+@requires_role([1])
+def admin_restore():
+    """Admin interface for restoring encrypted database backups"""
+    memory_manager.register_object("admin_restore", locals())
+    if request.method == 'POST':
+        success = db_manager.restore_encrypted_backup()
+        if success:
+            flash("Database restored from backup successfully!", "success")
+        else:
+            flash("Restore failed. See logs.", "error")
+        return redirect('/admin/restore')
+    return render_template('admin_restore.html', username=session.get('username'))
+
 @app.route('/password-reset', methods=['GET', 'POST'])
 @requires_role([1, 2, 3])
 def password_reset():

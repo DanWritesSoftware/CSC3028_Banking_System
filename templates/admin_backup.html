@@ -1,0 +1,20 @@
+<!-- templates/admin_backup.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="stylesheet" href="{{url_for('static', filename='evilStyle.css') }}">
+    <title>Admin Backup</title>
+</head>
+
+<body>
+    <h1>Encrypted Database Backup</h1>
+    <form method="POST">
+        <label for="key_path">Encryption Key Path:</label>
+        <input type="text" id="key_path" name="key_path" value="encryption_key.key" required>
+        <button type="submit">Create Backup</button>
+    </form>
+    <p><a href="/admin">Return to Admin Dashboard</a></p>
+</body>
+</html>

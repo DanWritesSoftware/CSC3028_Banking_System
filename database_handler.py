@@ -10,6 +10,7 @@ import traceback
 import shutil
 import os
 import secrets
+import logging
 from Account import Account
 from audit_log import AuditLog
 from encryption_utils import decrypt_string_with_file_key, encrypt_string_with_file_key
@@ -22,8 +23,9 @@ class Database:
     Handles database operations with thread-local connection pooling.
     """
 
-    def __init__(self, name):
+    def __init__(self, name="BankingData.db", backup_name="BankingDataBackup.db"):
         self.name = name
+        self.backup_name = backup_name
         self.local = threading.local()
 
     def get_connection(self):
@@ -584,69 +586,57 @@ class Database:
         if hasattr(self.local, 'conn') and self.local.conn:
             self.local.conn.close()
 
-    def backup_encrypted_database(self, backup_path: str, encryption_key_path: str) -> bool:
+    def backup_encrypted_database(self, encryption_key_path="encryption_key.key") -> bool:
         """
         Creates an encrypted backup using VACUUM INTO.
-        Ensures the backup includes all schema and data safely.
+        Stores the encrypted DB at self.backup_name.
         """
         try:
-            # Create temp clean DB file with VACUUM INTO
-            temp_clean_path = backup_path + ".tmp_clean"
+            temp_clean_path = self.backup_name + ".tmp_clean"
 
             conn = self.get_connection()
             conn.execute(f"VACUUM INTO '{temp_clean_path}'")
             conn.commit()
 
-            # Load encryption key
             with open(encryption_key_path, 'rb') as key_file:
                 key = key_file.read()
             cipher = Fernet(key)
 
-            # Read flushed db into bytes
             with open(temp_clean_path, 'rb') as f:
                 db_data = f.read()
 
-            # Encrypt and save
             encrypted = cipher.encrypt(db_data)
-            with open(backup_path, 'wb') as f:
+            with open(self.backup_name, 'wb') as f:
                 f.write(encrypted)
 
             os.remove(temp_clean_path)
+            logging.info(f"Encrypted backup saved to {self.backup_name}")
             return True
 
         except Exception as e:
-            print(f"[ERROR] Encrypted backup failed: {e}")
+            logging.error(f"Encrypted backup failed: {e}")
             return False
 
-    def restore_encrypted_backup(self, backup_path: str, encryption_key_path: str) -> bool:
+
+    def restore_encrypted_backup(self, encryption_key_path="encryption_key.key") -> bool:
         """
-        Restores the encrypted database backup by decrypting and replacing the current DB file.
-        
-        Args:
-            backup_path (str): Path to the encrypted backup file.
-            encryption_key_path (str): Path to the Fernet key used for decryption.
-        
-        Returns:
-            bool: True if restore is successful, False otherwise.
+        Restores the database from self.backup_name using the provided encryption key.
         """
         try:
-            # Load the encryption key
             with open(encryption_key_path, 'rb') as key_file:
                 key = key_file.read()
             cipher = Fernet(key)
 
-            # Read and decrypt the backup data
-            with open(backup_path, 'rb') as encrypted_file:
+            with open(self.backup_name, 'rb') as encrypted_file:
                 encrypted_data = encrypted_file.read()
             decrypted_data = cipher.decrypt(encrypted_data)
 
-            # Write the decrypted data back to the live database file
             self.close_all_connections()
             with open(self.name, 'wb') as db_file:
                 db_file.write(decrypted_data)
 
-            print(f"[INFO] Database successfully restored from: {backup_path}")
+            logging.info(f"Database successfully restored from {self.backup_name}")
             return True
         except Exception as e:
-            print(f"[ERROR] Failed to restore encrypted backup: {e}")
+            logging.error(f"Failed to restore encrypted backup: {e}")
             return False
