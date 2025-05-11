@@ -6,10 +6,12 @@ Verifies database interactions and full transaction flows.
 import unittest
 import sqlite3
 import os
+import hashlib
 from database_handler import Database
 from deposit_handler import Deposit
 from withdrawal_handler import Withdrawal
 from transfer_handler import Transfer
+from encryption_utils import encrypt_string_with_file_key
 
 class TestBankingIntegration(unittest.TestCase):
     """Test cases for verifying integrated banking system functionality."""
@@ -22,7 +24,7 @@ class TestBankingIntegration(unittest.TestCase):
         if os.path.exists(cls.db_name):
             os.remove(cls.db_name)
 
-        # Create tables using the EXACT schema expected by Database class
+        # Create tables using the EXACT schema expected by Database class - updated to match current schema
         with sqlite3.connect(cls.db_name) as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -30,16 +32,30 @@ class TestBankingIntegration(unittest.TestCase):
                     usrID TEXT PRIMARY KEY,
                     usrName TEXT NOT NULL,
                     email TEXT NOT NULL,
-                    password TEXT NOT NULL
+                    password TEXT NOT NULL,
+                    RoleID INTEGER,
+                    usrNameHash TEXT,
+                    emailHash TEXT
                 )
             """)
             cursor.execute("""
                 CREATE TABLE Account (
                     accID TEXT PRIMARY KEY,
+                    accValue TEXT NOT NULL,
                     accType TEXT NOT NULL,
-                    accUserID TEXT,
-                    accValue REAL NOT NULL,
-                    FOREIGN KEY (accUserID) REFERENCES User(usrID)
+                    usrID TEXT,
+                    FOREIGN KEY (usrID) REFERENCES User(usrID)
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE auditLog (
+                    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Operation TEXT,
+                    TableName TEXT,
+                    oldValue TEXT,
+                    newValue TEXT,
+                    ChangedAt TEXT,
+                    signature TEXT
                 )
             """)
             conn.commit()
@@ -54,32 +70,47 @@ class TestBankingIntegration(unittest.TestCase):
         with sqlite3.connect(self.db_name) as conn:
             conn.execute("DELETE FROM Account")
             conn.execute("DELETE FROM User")
+            conn.execute("DELETE FROM auditLog")
             conn.commit()
 
         # Create test user and accounts
         self.user_id = "123"
         self.account1 = "1234567890"
         self.account2 = "0987654321"
+        self.test_username = "testuser"
+        self.test_email = "test@example.com"
+        
+        # Generate hashes for username and email
+        username_hash = hashlib.sha256(self.test_username.lower().encode()).hexdigest()
+        email_hash = hashlib.sha256(self.test_email.lower().encode()).hexdigest()
+
+        # Encrypt username and email
+        encrypted_username = encrypt_string_with_file_key(self.test_username)
+        encrypted_email = encrypt_string_with_file_key(self.test_email)
 
         print("Creating test user and accounts...")
-        self.db.create_user(
-            self.user_id,
-            "testuser",
-            "test@example.com",
-            "ValidPass123!"
-        )
-        self.db.create_account(self.account1, self.user_id, "Checking", 1000.0)
-        self.db.create_account(self.account2, self.user_id, "Savings", 500.0)
+        
+        # Insert user with updated schema
+        with sqlite3.connect(self.db_name) as conn:
+            conn.execute(
+                "INSERT INTO User (usrID, usrName, email, password, RoleID, usrNameHash, emailHash) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (self.user_id, encrypted_username, encrypted_email, "ValidPass123!", 3, username_hash, email_hash)
+            )
+        
+        # Create accounts using the Database handler with correct parameter names (handles encryption)
+        self.db.create_account(acc_id=self.account1, usr_id=self.user_id, acc_name="Checking", acc_balance=1000.0)
+        self.db.create_account(acc_id=self.account2, usr_id=self.user_id, acc_name="Savings", acc_balance=500.0)
+        
         print(f"Created Checking: {self.account1} ($1000)")
         print(f"Created Savings: {self.account2} ($500)")
 
     def get_account_balance(self, account_id: str) -> float:
-        """Directly get balance from database"""
-        with sqlite3.connect(self.db_name) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT accValue FROM Account WHERE accID=?", (account_id,))
-            result = cursor.fetchone()
-            return float(result[0]) if result else 0.0
+        """Get account balance using the database handler to properly decrypt"""
+        accounts = self.db.get_user_accounts(self.user_id)
+        for account in accounts:
+            if account.accountNumber == account_id:
+                return account.balance
+        return 0.0
 
     def test_full_deposit_flow(self):
         """Test complete deposit workflow"""
@@ -149,7 +180,7 @@ class TestBankingIntegration(unittest.TestCase):
         result = withdrawal.try_withdrawal()
 
         print("Verifying error handling...")
-        self.assertIn("Error: Insufficient Funds", result, "Should detect insufficient funds")
+        self.assertIn("Error: Insufficient funds", result, "Should detect insufficient funds")
         print("Proper error detected")
 
         final_balance = self.get_account_balance(self.account1)
