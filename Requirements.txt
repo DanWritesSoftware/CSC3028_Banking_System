@@ -6,3 +6,5 @@ selenium==4.29.0
 requests==2.32.2
 locust
 beautifulsoup4
+openssl
+psutil

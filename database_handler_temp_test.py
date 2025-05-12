@@ -1,20 +1,14 @@
+import os
+import random
 from database_handler import Database
+from encryption_utils import decrypt_string_with_file_key
+from user_management import UserManager
 
-# Initialize database handler
-db = Database("BankingDatabase.db")
+# Initialize components
+db = Database("BankingData.db")
+um = UserManager()
 
-# Define test data
-acc_id = "9999999999"           # 10-digit unique ID
-usr_id = "1234567890"           # Make sure this user ID exists in your User table
-acc_name = "Test Account"
-acc_balance = 100.50
+# Generate random test credentials
 
-# Call the create_account method
-try:
-    success = db.create_account(acc_id, usr_id, acc_name, acc_balance)
-    if success:
-        print("✅ Account created successfully!")
-    else:
-        print(" Account creation failed.")
-except Exception as e:
-    print(" Error:", e)
+
+db.get_user_accounts(7637531772)

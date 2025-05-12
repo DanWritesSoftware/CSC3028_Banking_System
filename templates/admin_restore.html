@@ -1,0 +1,46 @@
+<!-- admin_backup_restore.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Backup and Restore</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="stylesheet" href="/static/evilStyle.css">
+</head>
+<body>
+    <header>
+        <h1>Admin Backup & Restore Panel</h1>
+        <nav>
+            <a href="/admin">Back to Dashboard</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <section>
+            <h2>Backup Database</h2>
+            <form method="post" action="/admin/backup">
+                <button type="submit">Create Encrypted Backup</button>
+            </form>
+        </section>
+
+        <section>
+            <h2>Restore Database</h2>
+            <form method="post" action="/admin/restore">
+                <button type="submit">Restore from Backup</button>
+            </form>
+        </section>
+    </main>
+
+</body>
+</html>

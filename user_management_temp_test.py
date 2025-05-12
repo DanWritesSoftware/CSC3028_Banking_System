@@ -1,26 +1,47 @@
-# user_management_temp_test.py
-
+import os
+import bcrypt
+import hashlib
+from encryption_utils import decrypt_string_with_file_key, encrypt_string_with_file_key
 from user_management import UserManager
-import logging
+from database_handler import Database
 
-# Setup logging to console
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-# Create instance of UserManager
+# Initialize components
+db = Database("BankingData.db")
 user_manager = UserManager()
 
-# Replace this with a valid user ID from your database
-test_user_id = "9444219395"  # Use an actual usrID from your DB
-test_index = 0  # First account
+# Test Parameters
+username = "SecureUser"
+email = f"{username}@example.com"
+password = "StrongPass123!"
+confirm_password = "StrongPass123!"
 
-def test_get_user_account_info():
-    logging.info(f"Testing get_user_account_info_from_index for user_id={test_user_id}, index={test_index}")
-    result = user_manager.get_user_account_info_from_index(test_user_id, test_index)
-    
-    if result:
-        logging.info(f"Retrieved account: Number={result.accountNumber}, Type={result.type}, Balance={result.balance}")
-    else:
-        logging.error("Failed to retrieve account information.")
+print("[TEST] Registering new secure user...")
+result = user_manager.sign_up_customer(username, email, password, confirm_password)
+print(f"[RESULT] Signup result: {result}")
 
-if __name__ == "__main__":
-    test_get_user_account_info()
+print("\n[TEST] Looking up user with full decryption (slow)...")
+decrypted_result = db.get_user_by_username(username)
+if decrypted_result:
+    print(f"[PASS] Decryption lookup successful: {decrypted_result['usrName']}")
+else:
+    print("[FAIL] Decryption lookup failed.")
+
+print("\n[TEST] Looking up user with hash-based search (fast)...")
+hash_result = db.get_user_encrypted_search(username)
+if hash_result:
+    print(f"[PASS] Encrypted search succeeded: {hash_result['usrName']}")
+else:
+    print("[FAIL] Encrypted search via hash failed.")
+
+print("\n[TEST] Verifying password hash...")
+if bcrypt.checkpw(password.encode(), hash_result['password'].encode()):
+    print("[PASS] Password hash matches.")
+else:
+    print("[FAIL] Password hash mismatch.")
+
+print("\n[TEST] Attempting login with encrypted search and 2FA trigger...")
+login_result = user_manager.login(username, password)
+if login_result and login_result.get('requires_2fa'):
+    print(f"[PASS] Login succeeded. 2FA sent to: {login_result['email']}")
+else:
+    print("[FAIL] Login or 2FA trigger failed.")

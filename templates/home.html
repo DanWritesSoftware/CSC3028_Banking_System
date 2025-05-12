@@ -4,22 +4,22 @@
     <meta charset="UTF-8">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.png') }}">
     <title>Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
-<link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
-
-<div class="header">
-    <h1>Evil Banking System</h1>
-    <h4>Welcome, {{ username }}</h4>
-    <div class="headerGrid">
-        <div><a href="/logout">Logout</a></div>
-        <div><a href="/password-reset">Reset Password</a></div>
-        <div><a href="/new">New Bank Account</a></div>
-        <div><a href="/transfer">Transfer Money</a></div>
+<body>
+    <div class="header">
+        <h1>Evil Banking System</h1>
+        <h4>Welcome, {{ username }}</h4>
+        <div class="headerGrid">
+            <div><a href="/logout">Logout</a></div>
+            <div><a href="/password-reset">Reset Password</a></div>
+            <div><a href="/new">New Bank Account</a></div>
+            <div><a href="/transfer">Transfer Money</a></div>
+        </div>
     </div>
 
-</div>
-<!-- Display flash messages here -->
+    <!-- Display flash messages here -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <div class="flashed-messages">
@@ -32,11 +32,14 @@
         {% endif %}
     {% endwith %}
 
-<body>
     <div class="grid-container">
         {% for account in account_list %}
             <div class="grid-item">
-                <a class="buttonClass" href="/account/{{ loop.index - 1 }}"><h1>{{ account.type }}</h1><body>${{ account.balance }}</body></a>
+                <a class="buttonClass" href="{{ url_for('view_individual_account', account_number=account.number) }}">
+                    <h1>{{ account.type|capitalize }}</h1>
+                    <p>Balance: ${{ "%.2f"|format(account.balance) }}</p>
+                    <p>Acct #: {{ account.number_masked }}</p>
+                </a>
             </div>
         {% endfor %}
     </div>

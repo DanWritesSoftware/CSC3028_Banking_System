@@ -5,16 +5,27 @@ This module handles database operations for the banking system.
 
 import sqlite3
 import threading
+import hashlib
+import traceback
+import shutil
+import os
+import secrets
+import logging
 from Account import Account
 from audit_log import AuditLog
+from encryption_utils import decrypt_string_with_file_key, encrypt_string_with_file_key
+from signature_utils import sign_message
+from datetime import datetime
+from cryptography.fernet import Fernet, InvalidToken
 
 class Database:
     """
     Handles database operations with thread-local connection pooling.
     """
 
-    def __init__(self, name):
+    def __init__(self, name="BankingData.db", backup_name="BankingDataBackup.db"):
         self.name = name
+        self.backup_name = backup_name
         self.local = threading.local()
 
     def get_connection(self):
@@ -34,9 +45,13 @@ class Database:
     def create_account(self, acc_id: str, usr_id: str, acc_name: str, acc_balance: float) -> bool:
         conn = self.get_connection()
         try:
+            encrypted_acc_balance = encrypt_string_with_file_key(str(acc_balance))
+
+            encrypted_acc_type = encrypt_string_with_file_key(acc_name)
+
             conn.execute(
                 "INSERT INTO Account (accID, accType, usrID, accValue) VALUES (?, ?, ?, ?)",
-                (acc_id, acc_name, usr_id, acc_balance)
+                (acc_id, encrypted_acc_type, usr_id, encrypted_acc_balance)
             )
             conn.commit()
             return True
@@ -44,12 +59,13 @@ class Database:
             conn.rollback()
             raise e
 
-    def create_user(self, usr_id: str, usr_name: str, email: str, password: str, role_id: int) -> bool:
+    def create_user(self, usr_id: str, usr_name: str, email: str, password: str, role_id: int, username_hash: str, email_hash: str) -> bool:
         conn = self.get_connection()
         try:
+
             conn.execute(
-                "INSERT INTO User (usrID, usrName, email, password, RoleID) VALUES (?, ?, ?, ?, ?)",
-                (usr_id, usr_name, email, password, role_id)
+                "INSERT INTO User (usrID, usrName, email, password, RoleID, usrNameHash, emailHash) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (usr_id, usr_name, email, password, role_id, username_hash, email_hash)
             )
             conn.commit()
             return True
@@ -61,11 +77,41 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Account WHERE usrID=?", (usr_id,))
-        accounts = [
-            Account(row[0], row[2], float(row[1])) 
-            for row in cursor.fetchall()
-        ]
-        return accounts
+        accounts = []
+
+        for row in cursor.fetchall():
+            try:
+                acc_number = row[0]
+                acc_value_raw = row[1]  # Encrypted numeric balance
+                acc_type_raw = row[2]   # Encrypted string (e.g., "Checking")
+
+                # Decrypt account type
+                try:
+                    decrypted_type = decrypt_string_with_file_key(acc_type_raw)
+                except (InvalidToken, Exception):
+                    decrypted_type = str(acc_type_raw)  # fallback if decryption fails
+
+                # Decrypt and parse balance
+                try:
+                    decrypted_balance_str = decrypt_string_with_file_key(acc_value_raw)
+                    decrypted_balance = float(decrypted_balance_str)
+                except (InvalidToken, ValueError):
+                    try:
+                        decrypted_balance = float(acc_value_raw)  # fallback if plaintext
+                    except Exception:
+                        raise ValueError(f"Balance failed decryption and float cast: {acc_value_raw}")
+
+                accounts.append(Account(
+                    accountNumber=acc_number,
+                    accountType=decrypted_type,
+                    balance=decrypted_balance
+                ))
+
+            except Exception as e:
+                print(f"[ERROR] Decryption Failed for account {row[0]}: {e}")
+
+        print("[DEBUG] get_user_accounts returning:", accounts)
+        return accounts  
 
     def get_users(self, usr_id: str) -> list[dict]:
         conn = self.get_connection()
@@ -124,16 +170,35 @@ class Database:
                     errors.append("Error: Account not found")
                     return errors
                 
-                balance = float(result[0])
+                decrypted_balance = decrypt_string_with_file_key(result[0])
+                balance = float(decrypted_balance)
                 if balance < amount:
                     errors.append("Error: Insufficient funds")
                     return errors
                 
                 new_balance = balance - amount
+
+                encrypted_new_balance = encrypt_string_with_file_key(str(new_balance))
                 cursor.execute(
                     "UPDATE Account SET accValue=? WHERE accID=?",
-                    (new_balance, account_id)
+                    (encrypted_new_balance, account_id)
                 )
+
+                # Encrypted Audit with digital signature
+                operation = "WITHDRAW"
+                table_name = "Account"
+                timestamp = datetime.utcnow().isoformat()
+                old_value = encrypt_string_with_file_key(f"Balance: {balance}")
+                new_value = encrypt_string_with_file_key(f"Balance: {new_balance}")
+                message = f"{operation}|{table_name}|{old_value}|{new_value}|{timestamp}"
+                signature = sign_message(message).hex()
+
+                cursor.execute(
+                    "INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt, signature) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (operation, table_name, old_value, new_value, timestamp, signature)
+                )
+
             return []
         except sqlite3.Error as e:
             errors.append(f"Database error: {str(e)}")
@@ -147,12 +212,42 @@ class Database:
         try:
             with conn:
                 cursor = conn.cursor()
-                cursor.execute(
-                    "UPDATE Account SET accValue = accValue + ? WHERE accID=?",
-                    (amount, account_id)
-                )
-                if cursor.rowcount == 0:
+                cursor.execute("SELECT accValue FROM Account WHERE accID=?", (account_id,))
+                
+                result = cursor.fetchone()
+
+                if not result:
                     return ["Error: Account not found"]
+                
+                encrypted_balance = result[0]
+                
+                try:
+                    decrypted_balance = decrypt_string_with_file_key(encrypted_balance)
+                    balance = float(decrypted_balance)
+
+                except Exception as e:
+                    return [f"Error Decrypting Balance: {str(e)}"]
+                
+                new_balance = balance + amount
+
+                encrypted_new_balance = encrypt_string_with_file_key(str(new_balance))
+
+                cursor.execute ("UPDATE Account SET accValue = ? WHERE accID = ?", (encrypted_new_balance, account_id))
+                
+                # Audit with digital signature
+                operation = "DEPOSIT"
+                table_name = "Account"
+                timestamp = datetime.utcnow().isoformat()
+                old_value = encrypt_string_with_file_key(f"Balance: {balance}")
+                new_value = encrypt_string_with_file_key(f"Balance: {new_balance}")
+                message = f"{operation}|{table_name}|{old_value}|{new_value}|{timestamp}"
+                signature = sign_message(message).hex()
+
+                cursor.execute(
+                    "INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt, signature) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (operation, table_name, old_value, new_value, timestamp, signature)
+                )
             return []
         except sqlite3.Error as e:
             return [f"Database error: {str(e)}"]
@@ -163,34 +258,61 @@ class Database:
             with conn:
                 cursor = conn.cursor()
                 # Check source account
-                cursor.execute(
-                    "SELECT accValue FROM Account WHERE accID=?",
-                    (from_account_id,)
-                )
-                from_balance = cursor.fetchone()
-                if not from_balance:
-                    return ["Error: Source account not found"]
+                cursor.execute("SELECT accValue FROM Account WHERE accID=?", (from_account_id,))
+                from_result = cursor.fetchone()
+                if not from_result:
+                    return ["Error: Source Account Not Found"]
+                from_balance = float(decrypt_string_with_file_key(from_result[0]))
+
+                if from_balance < amount:
+                    return ["Error: Insufficient Funds, Brokie."]
                 
-                if float(from_balance[0]) < amount:
-                    return ["Error: Insufficient funds"]
+                cursor.execute("SELECT accValue FROM Account WHERE accID=?", (to_account_id,))
+
+                to_result = cursor.fetchone()
+
+                if not to_result:
+                    return ["Error: Destination Account Not Found"]
                 
-                # Check destination account
+                to_balance = float(decrypt_string_with_file_key(to_result[0]))
+
+                new_from_balance = from_balance - amount
+                new_to_balance = to_balance + amount
+
+                encrypted_from_balance = encrypt_string_with_file_key(str(new_from_balance))
+                encrypted_to_balance = encrypt_string_with_file_key(str(new_to_balance))
+
+                #Update Both Accounts
+                cursor.execute("UPDATE Account SET accValue = ? WHERE accID = ?",
+                               (encrypted_from_balance, from_account_id))
+                cursor.execute("UPDATE Account SET accValue = ? WHERE accID = ?",
+                               (encrypted_to_balance, to_account_id))
+                timestamp = datetime.utcnow().isoformat()
+
+                withdraw_old_value = encrypt_string_with_file_key(f"Balance: {from_balance}")
+                withdraw_new_value = encrypt_string_with_file_key(f"Balance: {new_from_balance}")
+                deposit_old_value = encrypt_string_with_file_key(f"Balance: {to_balance}")
+                deposit_new_value = encrypt_string_with_file_key(f"Balance: {new_to_balance}")
+
+                withdraw_message = f"TRANSFER-WITHDRAWAL|Account|Balance: {from_balance}|Balance: {new_from_balance}|{timestamp}"
+                deposit_message = f"TRANSFER-DEPOSIT|Account|Balance: {to_balance}|Balance: {new_to_balance}|{timestamp}"
+                withdraw_signature = sign_message(withdraw_message).hex()
+                deposit_signature = sign_message(deposit_message).hex()
+
                 cursor.execute(
-                    "SELECT 1 FROM Account WHERE accID=?",
-                    (to_account_id,)
-                )
-                if not cursor.fetchone():
-                    return ["Error: Destination account not found"]
+                "INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt, signature) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                ("TRANSFER-WITHDRAWAL", "Account", withdraw_old_value, withdraw_new_value, timestamp, withdraw_signature)
+            )
+
+            cursor.execute(
+                "INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt, signature) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                ("TRANSFER-DEPOSIT", "Account", deposit_old_value, deposit_new_value, timestamp, deposit_signature)
+            )
+
+            conn.commit()
                 
-                # Perform transfer
-                cursor.execute(
-                    "UPDATE Account SET accValue = accValue - ? WHERE accID=?",
-                    (amount, from_account_id)
-                )
-                cursor.execute(
-                    "UPDATE Account SET accValue = accValue + ? WHERE accID=?",
-                    (amount, to_account_id)
-                )
             return []
         except sqlite3.Error as e:
             return [f"Database error: {str(e)}"]
@@ -210,28 +332,83 @@ class Database:
     def get_user_by_username(self, username: str) -> dict | None:
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM User WHERE usrName=?", (username,))
+        cursor.execute("SELECT * FROM User")
+        rows = cursor.fetchall()
+
+        for row in rows:
+            try:
+                decrypted_username = decrypt_string_with_file_key(row[1])
+                if decrypted_username == username:
+                    return {
+                        "usrID": row[0],
+                        "usrName": row[1],
+                        "email": row[2],
+                        "password": row[3],
+                        "RoleID": row[4]
+                    }
+            except Exception as e:
+                continue
+        return None
+    
+    def get_user_encrypted_search(self, username: str) -> dict | None:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        username_hash = hashlib.sha256(username.lower().encode()).hexdigest()
+
+        cursor.execute("SELECT* FROM User WHERE usrNameHash = ?", (username_hash,))
+
         row = cursor.fetchone()
-        return {
-            "usrID": row[0],
-            "usrName": row[1],
-            "email": row[2],
-            "password": row[3],
-            "RoleID": row[4]
-        } if row else None
+
+        if row:
+            return {
+                "usrID": row[0],
+                "usrName": row[1],
+                "email": row[2],
+                "password": row[3],
+                "RoleID": row[4]
+            }
+        return None
 
     def get_user_by_email(self, email: str) -> dict | None:
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM User WHERE email=?", (email,))
+        cursor.execute("SELECT * FROM user")
+        rows = cursor.fetchall()
+
+        for row in rows:
+            try:
+                decrypted_email = decrypt_string_with_file_key(row[2])
+                if decrypted_email == email:        
+                    return {
+                        "usrID": row[0],
+                        "usrName": row[1],
+                        "email": row[2],
+                        "password": row[3],
+                        "RoleID": row[4]
+                    } if row else None
+            except Exception:
+                continue
+
+        return None
+    
+    def get_user_encrypted_email_search(self, email: str) -> dict | None:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        email_hash = hashlib.sha256(email.lower().encode()).hexdigest()
+
+        cursor.execute("SELECT* FROM User WHERE emailHash = ?", (email_hash,))
+
         row = cursor.fetchone()
-        return {
-            "usrID": row[0],
-            "usrName": row[1],
-            "email": row[2],
-            "password": row[3],
-            "RoleID": row[4]
-        } if row else None
+
+        if row:
+            return {
+                "usrID": row[0],
+                "usrName": row[1],
+                "email": row[2],
+                "password": row[3],
+                "RoleID": row[4]
+            }
+        return None
 
     def get_user_creation_log(self, identifier: str) -> list:
         conn = self.get_connection()
@@ -264,7 +441,8 @@ class Database:
                 row[2],  # TableName
                 row[3],  # oldValue
                 row[4],  # newValue
-                row[5]   # ChangedAt
+                row[5],  # ChangedAt
+                row[6]   # signature
             ) for row in cursor.fetchall()
         ]
 
@@ -274,7 +452,191 @@ class Database:
             self.local.conn.close()
             self.local.conn = None
 
+    def secure_delete_user(self, usr_id: str) -> bool:
+        """
+        Securely deletes a user by overwriting sensitive fields and removing their record.
+
+        Args:
+            usr_id (str): The ID of the user to delete.
+
+            Returns:
+                bool: True if successful, False otherwise.
+        """
+
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            # Fetch Original user Data
+            cursor.execute("SELECT usrName, email, password FROM User WHERE usrID=?", (usr_id,))
+            original = cursor.fetchone()
+
+            if not original:
+                print (f"[WARN] User {usr_id} not found.")
+                return False
+            
+            try:
+                original_usr_name = decrypt_string_with_file_key(original[0])
+                original_email = decrypt_string_with_file_key(original[1])
+            except Exception as decryption_error:
+                print(f"[ERROR] Failed to decrypt fields for user {usr_id}: {decryption_error}")
+                return False
+            original_password = original[2]
+
+            fake_name = encrypt_string_with_file_key(secrets.token_hex(8))
+            fake_email = encrypt_string_with_file_key(secrets.token_hex(8) + "@Deleted.local")
+            fake_password = secrets.token_hex(32)
+            fake_hash = hashlib.sha256(secrets.token_bytes(32)).hexdigest()
+
+            cursor.execute("UPDATE User SET usrName=?, email=?, password=?, usrNameHash=?, emailHash=? WHERE usrID=?",
+                           (fake_name, fake_email, fake_password, fake_hash, fake_hash, usr_id))
+            
+            operation = "DELETE-USER"
+            table_name = "User"
+            time_stamp = datetime.utcnow().isoformat()
+            old_value = encrypt_string_with_file_key(f"usrID: {usr_id}, userName: {original_usr_name}, email: {original_email}, password: {original_password}")
+
+            new_value = encrypt_string_with_file_key("Record Deleted")
+
+            message = f"{operation}|{table_name}|{old_value}|{new_value}|{time_stamp}"
+
+            signature = sign_message(message).hex()
+
+            cursor.execute("INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt, signature) VALUES (?, ?, ?, ?, ?, ?)", (operation, table_name, old_value, new_value, time_stamp, signature))
+
+            cursor.execute("DELETE FROM User WHERE usrID=?", (usr_id,))
+
+            conn.commit()
+
+            self.get_connection().execute("VACUUM")
+
+            print(f"[INFO] Securely deleted user {usr_id}")
+
+            return True
+        
+        except Exception as e:
+            print(f"[ERROR] Deletion failed for user: {usr_id}: {e}")
+
+            return False
+        
+    def secure_delete_account(self, acc_id: str) -> bool:
+        """
+        Securely deletes an account by overwriting sensitive fields and removing the record.
+
+        Args:
+            acc_id (str): The ID of the account to delete.
+
+        Returns:
+            bool: True if deletion was successful, False otherwise.
+        """
+
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            # Fetch original account information
+            cursor.execute("SELECT accType, accValue FROM Account WHERE accID=?", (acc_id,))
+            original = cursor.fetchone()
+
+            if not original:
+                print(f"[WARN] Account {acc_id} not found.")
+                return False
+            
+            try:
+                original_type = decrypt_string_with_file_key(original[0])
+                original_value = decrypt_string_with_file_key(original[1])
+            except Exception as decryption_error:
+                print(f"[ERROR] Failed to decrypt account {acc_id} data: {decryption_error}")
+                return False
+
+            fake_type = encrypt_string_with_file_key("CLOSED_" + secrets.token_hex(4))
+            fake_value = encrypt_string_with_file_key("0.00")
+
+            cursor.execute("UPDATE Account SET accType=?, accValue=? WHERE accID=?", (fake_type, fake_value, acc_id))
+
+            # Prepare Audit Log
+            operation = "DELETE-ACCOUNT"
+            table_name = "Account"
+            time_stamp = datetime.utcnow().isoformat()
+            old_value = encrypt_string_with_file_key(f"accID: {acc_id}, Type: {original_type}, Value: {original_value}")
+            new_value = encrypt_string_with_file_key("Record Deleted")
+
+            message = f"{operation}|{table_name}|{old_value}|{new_value}|{time_stamp}"
+            signature = sign_message(message).hex()
+
+            cursor.execute("INSERT INTO auditLog (Operation, TableName, oldValue, newValue, ChangedAt, signature) VALUES (?, ?, ?, ?, ?, ?)", 
+                           (operation, table_name, old_value, new_value, time_stamp, signature))
+            
+            # Delete the account record
+            cursor.execute("DELETE FROM Account WHERE accID=?", (acc_id,))
+            conn.commit()
+
+            self.get_connection().execute("VACUUM")
+
+            print(f"[INFO] Securely Deleted Account: {acc_id}")
+
+            return True
+        except Exception as e:
+            print(f"[ERROR] Failed to delete Account: {acc_id}: {e}")
+
+            return False
+
     def __del__(self):
         """Clean up connections when instance is destroyed"""
         if hasattr(self.local, 'conn') and self.local.conn:
             self.local.conn.close()
+
+    def backup_encrypted_database(self, encryption_key_path="encryption_key.key") -> bool:
+        """
+        Creates an encrypted backup using VACUUM INTO.
+        Stores the encrypted DB at self.backup_name.
+        """
+        try:
+            temp_clean_path = self.backup_name + ".tmp_clean"
+
+            conn = self.get_connection()
+            conn.execute(f"VACUUM INTO '{temp_clean_path}'")
+            conn.commit()
+
+            with open(encryption_key_path, 'rb') as key_file:
+                key = key_file.read()
+            cipher = Fernet(key)
+
+            with open(temp_clean_path, 'rb') as f:
+                db_data = f.read()
+
+            encrypted = cipher.encrypt(db_data)
+            with open(self.backup_name, 'wb') as f:
+                f.write(encrypted)
+
+            os.remove(temp_clean_path)
+            logging.info(f"Encrypted backup saved to {self.backup_name}")
+            return True
+
+        except Exception as e:
+            logging.error(f"Encrypted backup failed: {e}")
+            return False
+
+
+    def restore_encrypted_backup(self, encryption_key_path="encryption_key.key") -> bool:
+        """
+        Restores the database from self.backup_name using the provided encryption key.
+        """
+        try:
+            with open(encryption_key_path, 'rb') as key_file:
+                key = key_file.read()
+            cipher = Fernet(key)
+
+            with open(self.backup_name, 'rb') as encrypted_file:
+                encrypted_data = encrypted_file.read()
+            decrypted_data = cipher.decrypt(encrypted_data)
+
+            self.close_all_connections()
+            with open(self.name, 'wb') as db_file:
+                db_file.write(decrypted_data)
+
+            logging.info(f"Database successfully restored from {self.backup_name}")
+            return True
+        except Exception as e:
+            logging.error(f"Failed to restore encrypted backup: {e}")
+            return False

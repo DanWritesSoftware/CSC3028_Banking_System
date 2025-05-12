@@ -6,32 +6,39 @@
     <title>Create Account</title>
 </head>
 
-<link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
-
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
 <body>
 
-<a href="/home">back</a>
+<a href="/teller">back</a>
 
 <!-- Display flash messages here -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flashed-messages">
-                {% for category, message in messages %}
-                    <div class="flash-message {{ category }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flashed-messages">
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
 
-<form action="/new" method = "POST">
-    <p><input type = "text" name = "accountName" placeholder="Account Name" autocomplete="off"/></p>
+<form action="/new-account" method="POST">
+    <p><input type="text" name="username" placeholder="Customer Username" autocomplete="off" required /></p>
 
-    <p><input type = "number" name = "value" placeholder="Initial Deposit Amount" autocomplete="off" step="0.01" min="0"/></p>
+    <p>
+        <select name="accountType" required>
+            <option value="" disabled selected>Select Account Type</option>
+            <option value="Checking">Checking</option>
+            <option value="Savings">Savings</option>
+        </select>
+    </p>
 
-    <p><input type = "submit" class = "smallButtonClass" value = "Submit" /></p>
+    <p><input type="number" name="value" placeholder="Initial Deposit Amount" autocomplete="off" step="0.01" min="0" required /></p>
+
+    <p><input type="submit" class="smallButtonClass" value="Submit" /></p>
 </form>
 
 </body>

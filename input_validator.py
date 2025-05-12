@@ -29,12 +29,12 @@ class InputValidator:
         """
         Validates currency amounts.
         Rules:
-        - Must be a positive number.
+        - Must be a positive number (greater than zero).
         - Must have up to 2 decimal places.
         """
         if not isinstance(amount, (int, float)):
             return False
-        if amount < 0:
+        if amount <= 0:  # Changed to check for positive (> 0), not just non-negative (>= 0)
             return False
         if not round(amount, 2) == amount:
             return False

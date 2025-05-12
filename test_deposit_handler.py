@@ -4,8 +4,9 @@ Verifies deposit validation and database interactions.
 """
 
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from deposit_handler import Deposit
+from input_validator import InputValidator
 
 
 class TestDepositHandler(unittest.TestCase):
@@ -28,6 +29,7 @@ class TestDepositHandler(unittest.TestCase):
 
     def test_invalid_account_number(self):
         """Test deposit with invalid account format should fail."""
+        # No need to configure the mock since validation will fail
         deposit = Deposit("short", self.valid_amount, self.mock_db)
         errors = deposit.try_deposit()
         self.assertIn("Invalid account number", errors)
@@ -35,6 +37,7 @@ class TestDepositHandler(unittest.TestCase):
 
     def test_zero_amount(self):
         """Test deposit with zero amount should fail."""
+        # No need to configure the mock since validation will fail
         deposit = Deposit(self.valid_account, 0.0, self.mock_db)
         errors = deposit.try_deposit()
         self.assertIn("Invalid deposit amount (must be positive with ≤ 2 decimals)", errors)
@@ -42,6 +45,7 @@ class TestDepositHandler(unittest.TestCase):
 
     def test_non_numeric_amount(self):
         """Test deposit with non-numeric amount should fail."""
+        # No need to configure the mock since validation will fail
         deposit = Deposit(self.valid_account, "two hundred", self.mock_db)
         errors = deposit.try_deposit()
         self.assertIn("Invalid deposit amount (must be positive with ≤ 2 decimals)", errors)

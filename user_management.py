@@ -9,14 +9,20 @@ import sqlite3
 import time
 import smtplib
 import socket
+import hashlib
 from email.message import EmailMessage
 from typing import Optional, Dict
 from Account import Account
 from flask import session
 
+from encryption_utils import encrypt_string_with_file_key
+
 import bcrypt
 from database_handler import Database
 from input_validator import InputValidator
+
+from encryption_utils import encrypt_string_with_file_key
+from encryption_utils import decrypt_string_with_file_key
 
 import os 
 
@@ -76,10 +82,19 @@ class UserManager:
             if not db_manager.user_id_in_use(user_id):
                 break
 
+        username_hash = hashlib.sha256(username.lower().encode()).hexdigest()
+
+        email_hash = hashlib.sha256(email.lower().encode()).hexdigest()
+
+        encrypted_username = encrypt_string_with_file_key(username)
+
+        encrypted_email = encrypt_string_with_file_key(email)
+
         hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        db_manager.create_user(user_id, username, email, hashed_password, 3)
-        logging.info("User %s registered successfully.", username)
-        return "User registered successfully!"
+
+        db_manager.create_user(user_id, encrypted_username, encrypted_email, hashed_password, 3, username_hash, email_hash)
+        logging.info("User %s registered successfully with ID %s.", username, user_id)
+        return user_id
 
     def sign_up_teller(self, username: str, email: str, password: str, confirm_password: str) -> str:
         """Registers a new user with hashed password security."""
@@ -102,8 +117,19 @@ class UserManager:
             if not db_manager.user_id_in_use(user_id):
                 break
 
+        username_hash = hashlib.sha256(username.lower().encode()).hexdigest()
+
+        email_hash = hashlib.sha256(email.lower().encode()).hexdigest()
+
+        encrypted_username = encrypt_string_with_file_key(username)
+
+        encrypted_email = encrypt_string_with_file_key(email)
+
         hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        db_manager.create_user(user_id, username, email, hashed_password, 2)
+
+        hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+        db_manager.create_user(user_id, encrypted_username, encrypted_email, hashed_password, 2, username_hash, email_hash)
         logging.info("User %s registered successfully.", username)
         return "Teller registered successfully!"
 
@@ -128,25 +154,48 @@ class UserManager:
             if not db_manager.user_id_in_use(user_id):
                 break
 
+        username_hash = hashlib.sha256(username.lower().encode()).hexdigest()
+
+        email_hash = hashlib.sha256(email.lower().encode()).hexdigest()
+
+        encrypted_username = encrypt_string_with_file_key(username)
+
+        encrypted_email = encrypt_string_with_file_key(email)
+
         hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        db_manager.create_user(user_id, username, email, hashed_password, 1)
+
+        hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+        db_manager.create_user(user_id, encrypted_username, encrypted_email, hashed_password, 1, username_hash, email_hash)
         logging.info("User %s registered successfully.", username)
-        return "Administrator registered successfully!"
+        return "Teller registered successfully!"
+
 
     def login(self, username: str, password: str) -> Optional[Dict]:
         """Initiates authentication and triggers 2FA email."""
         try:
-            user_data = db_manager.get_user_by_username(username)
+            user_data = db_manager.get_user_encrypted_search(username)
             if not user_data:
                 logging.warning("Login failed: User not found.")
+                
                 return None
 
             stored_hash = user_data['password']
             if bcrypt.checkpw(password.encode(), stored_hash.encode()):
-                email = user_data['email']
-                code = self._generate_verification_code(email)
-                self._send_verification_email(email, code)
-                return {'requires_2fa': True, 'email': email}
+                encrypted_email = user_data['email']
+
+                try:
+                    decrypted_email = decrypt_string_with_file_key(encrypted_email)
+
+                except Exception as e:
+                    logging.error(f"Failed to decrypt email for 2FA: {e}")
+                    return None
+        
+                code = self._generate_verification_code(decrypted_email)
+                self._send_verification_email(decrypted_email, code)
+
+                return {'requires_2fa': True, 'email': decrypted_email}
+
             logging.warning("Incorrect password.")
             return None
         except sqlite3.Error as e:
@@ -170,19 +219,27 @@ class UserManager:
             del self._verification_codes[email]
 
             user_data = db_manager.get_user_by_email(email)
+            if not user_data:
+                logging.error("User not found during 2FA verification for %s", email)
+                return None
+            
+            try:
+                session['username'] = decrypt_string_with_file_key(user_data['usrName'])
 
-            if user_data:
-                session['username'] = user_data['usrName']
-                session['user_id'] = user_data['usrID']
-                session['email'] = user_data['email']
-                session['role_id'] = user_data['RoleID']
+            except Exception as e:
+                logging.error("Failed to decrypt username for the session: %s", e)
+                return None
+            
+            session['user_id'] = user_data['usrID']
+            session['email'] = user_data['email']
+            session['role_id'] = user_data['RoleID']
 
-                logging.info("User %s logged in with RoleID %s", user_data['usrName'], user_data['RoleID'])
-
-                return user_data
-
-        logging.warning("Invalid code for %s", email)
-        return None
+            logging.info("2FA success. User %s authenticated", session['username'])
+            return user_data
+    
+        else:
+            logging.warning("Invalid code for %s", email)
+            return None
 
     def _generate_verification_code(self, email: str) -> str:
         """Generates 6-digit verification code."""
@@ -192,9 +249,11 @@ class UserManager:
             'expires': time.time() + CODE_EXPIRATION
         }
 
-        if os.getenv("FLASK_ENV", "").lower() in ["testing", "development"]:
-            print(f"[DEV MODE] 2FA code for {email}: {code}")  # Force print for visibility
-            logging.warning(f"[DEV MODE] 2FA code for {email}: {code}")
+        env = os.getenv("FLASK_ENV", "").lower()
+
+        if env in ["testing, development"]:
+            print(f"[DEV MODE] 2FA code for {email}: {code}")
+            logging.debug(f"[DEV MODE] 2FA code for {email}: {code}")
         return code
 
     def _send_verification_email(self, email: str, code: str) -> None:
@@ -219,6 +278,7 @@ class UserManager:
             logging.error("OS error occurred: %s", str(oe))
         except Exception as ex:
             logging.error("Unexpected error occurred: %s", str(ex))
+
     def password_reset(self, username: str, email: str,
                      new_password: str, confirm_password: str) -> str:
         """Handles password reset."""

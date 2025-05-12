@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Delete Account</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='evilStyle.css') }}">
+</head>
+<body>
+    <h1>Secure Delete Account</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post">
+        <label for="acc_id">Account ID:</label>
+        <input type="text" name="acc_id" id="acc_id" required>
+        <button type="submit">Delete Account</button>
+    </form>
+    <a href="/admin">Return to Admin Dashboard</a>
+</body>
+</html>
